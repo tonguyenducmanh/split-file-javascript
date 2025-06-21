@@ -285,21 +285,22 @@ class RefactorJS {
     fileNodesMap
   ) {
     const output = this.getOutputConfig(currentConfig);
+    let outputPath = this.getFullPathForNewFile(currentConfig);
     const key = path.join(output.importCofig, output.fileName);
-    if (!fileNodesMap.has(key)) fileNodesMap.set(key, []);
+    if (!fileNodesMap.has(outputPath)) fileNodesMap.set(outputPath, []);
 
     // Đổi tên node trước khi thêm
     if (node.id) {
       node.id = babelTypes.identifier(newName);
     }
 
-    fileNodesMap.get(key).push({ node, name: newName });
+    fileNodesMap.get(outputPath).push({ node, name: newName });
 
     const relativePath = this.buildImportPathFile(key);
     extractedItems.push({
       name: newName,
       fileName: output.fileName,
-      path: this.getFullPathForNewFile(currentConfig),
+      path: outputPath,
     });
     importsToAdd.push({ originalName, newName, path: relativePath });
   }

@@ -9,7 +9,10 @@ let analizes = Refactor.analyzeFiles(
   "./result/"
 );
 
-const code = fs.readFileSync("sample-split-config.json", "utf8");
+const code = fs.readFileSync(
+  "D:/code/my code/split-file-javascript/demo/sample-split-config.json",
+  "utf8"
+);
 let extractConfig = JSON.parse(code);
 
 let splitResult = Refactor.splitFiles(extractConfig);

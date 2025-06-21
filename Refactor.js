@@ -227,50 +227,88 @@ class RefactorJS {
       }));
   }
 
-  /**
-   * chia nhỏ file javascript theo config file nào sẽ có method, class nào từ file gốc
-   * sau đó import ngược vào file gốc
-   */
   splitFile(filePath, extractConfig) {
     let me = this;
-    // đọc toàn bộ source code
-    const code = fs.readFileSync(filePath, me._encodeType);
-
-    // đọc ra cấu trúc abstract syntax tree của code javascript
-    const ast = me.parseSource(code);
-
-    // tạo thư mục đầu ra trường hợp không có
-    me.createFolderOutput(extractConfig);
+    const code = fs.readFileSync(filePath, this._encodeType);
+    const ast = this.parseSource(code);
+    this.createFolderOutput(extractConfig);
 
     const extractedItems = [];
     const notFound = [...extractConfig];
     const importsToAdd = [];
 
-    // tạo báo cáo file js
-    me.traverseCodeForSplit(
+    // Dictionary để gom node theo file đích
+    const fileNodesMap = new Map();
+
+    this.traverseCodeForSplit(
       ast,
       extractConfig,
       me,
+      notFound,
       extractedItems,
       importsToAdd,
-      notFound
+      fileNodesMap
     );
 
-    // thêm import các file vừa tạo vào đầu file gốc
-    me.addImportToSourceFile(importsToAdd, ast);
+    // Ghi từng file 1 lần
+    for (const [filePath, items] of fileNodesMap.entries()) {
+      const exportNodes = items.map(({ node }) =>
+        babelTypes.exportNamedDeclaration(node, [])
+      );
+      const newAst = babelTypes.program(exportNodes, [], "module");
+      const code = generate(newAst).code;
+      fs.writeFileSync(filePath, code, this._encodeType);
+    }
 
-    // Write the modified original file
-    const modifiedCode = generate(ast, {
-      retainLines: false,
-      comments: true,
-    }).code;
+    this.addImportToSourceFile(importsToAdd, ast);
+    const modifiedCode = generate(ast, { comments: true }).code;
+    fs.writeFileSync(filePath, modifiedCode, this._encodeType);
 
-    fs.writeFileSync(filePath, modifiedCode, me._encodeType);
+    return { extractedItems, notFound };
+  }
 
-    return {
-      extractedItems,
-      notFound,
-    };
+  addToFile(
+    name,
+    node,
+    currentConfig,
+    extractedItems,
+    importsToAdd,
+    fileNodesMap
+  ) {
+    const output = this.getOutputConfig(currentConfig);
+    const key = path.join(output.outputDir, output.fileName);
+    if (!fileNodesMap.has(key)) fileNodesMap.set(key, []);
+    fileNodesMap.get(key).push({ node, name });
+
+    const relativePath = this.buildImportPathFile(key);
+    extractedItems.push({ name, fileName: output.fileName, path: key });
+    importsToAdd.push({ name, path: relativePath });
+  }
+  createFunctionFromDeclarator(declarator, name) {
+    if (babelTypes.isFunctionExpression(declarator.init)) {
+      return babelTypes.functionDeclaration(
+        babelTypes.identifier(name),
+        declarator.init.params,
+        declarator.init.body,
+        declarator.init.generator,
+        declarator.init.async
+      );
+    } else if (babelTypes.isArrowFunctionExpression(declarator.init)) {
+      const body = babelTypes.isBlockStatement(declarator.init.body)
+        ? declarator.init.body
+        : babelTypes.blockStatement([
+            babelTypes.returnStatement(declarator.init.body),
+          ]);
+
+      return babelTypes.functionDeclaration(
+        babelTypes.identifier(name),
+        declarator.init.params,
+        body,
+        false,
+        declarator.init.async
+      );
+    }
+    return null;
   }
 
   /**
@@ -323,66 +361,71 @@ class RefactorJS {
     ast,
     extractConfig,
     me,
+    notFound,
     extractedItems,
     importsToAdd,
-    notFound
+    fileNodesMap
   ) {
     traverse(ast, {
-      FunctionDeclaration(nodePath) {
-        const name = nodePath.node.id.name;
-        const currentConfig = me.getCurrentItemsFromConfig(extractConfig, name);
-        if (currentConfig) {
-          me.extractFunction(
-            nodePath,
+      FunctionDeclaration: (path) => {
+        const name = path.node.id.name;
+        const cfg = me.getCurrentItemsFromConfig(extractConfig, name);
+        if (cfg) {
+          me.addToFile(
             name,
-            currentConfig,
+            path.node,
+            cfg,
             extractedItems,
-            importsToAdd
+            importsToAdd,
+            fileNodesMap
           );
-          me.removeFromListQuery(notFound, name, currentConfig);
+          path.remove();
+          me.removeFromListQuery(notFound, name, cfg);
         }
       },
-
-      VariableDeclaration(nodePath) {
-        nodePath.node.declarations.forEach((declarator) => {
-          if (declarator.id && declarator.id.name) {
-            const name = declarator.id.name;
-            const currentConfig = me.getCurrentItemsFromConfig(
-              extractConfig,
-              name
+      VariableDeclaration: (path) => {
+        for (const decl of path.node.declarations) {
+          const name = decl.id.name;
+          const cfg = me.getCurrentItemsFromConfig(extractConfig, name);
+          if (
+            cfg &&
+            (babelTypes.isFunctionExpression(decl.init) ||
+              babelTypes.isArrowFunctionExpression(decl.init))
+          ) {
+            const funcNode = me.createFunctionFromDeclarator(decl, name);
+            me.addToFile(
+              name,
+              funcNode,
+              cfg,
+              extractedItems,
+              importsToAdd,
+              fileNodesMap
             );
-
-            if (
-              currentConfig &&
-              (babelTypes.isFunctionExpression(declarator.init) ||
-                babelTypes.isArrowFunctionExpression(declarator.init))
-            ) {
-              me.extractFunctionVariable(
-                nodePath,
-                name,
-                currentConfig,
-                extractedItems,
-                importsToAdd
+            me.removeFromListQuery(notFound, name, cfg);
+            if (path.node.declarations.length === 1) {
+              path.remove();
+            } else {
+              path.node.declarations = path.node.declarations.filter(
+                (d) => d.id.name !== name
               );
-              me.removeFromListQuery(notFound, name, currentConfig);
             }
           }
-        });
+        }
       },
-
-      ClassDeclaration(nodePath) {
-        const name = nodePath.node.id.name;
-        const currentConfig = me.getCurrentItemsFromConfig(extractConfig, name);
-
-        if (currentConfig) {
-          me.extractClass(
-            nodePath,
+      ClassDeclaration: (path) => {
+        const name = path.node.id.name;
+        const cfg = me.getCurrentItemsFromConfig(extractConfig, name);
+        if (cfg) {
+          me.addToFile(
             name,
-            currentConfig,
+            path.node,
+            cfg,
             extractedItems,
-            importsToAdd
+            importsToAdd,
+            fileNodesMap
           );
-          me.removeFromListQuery(notFound, name, currentConfig);
+          path.remove();
+          me.removeFromListQuery(notFound, name, cfg);
         }
       },
     });

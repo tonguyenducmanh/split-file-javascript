@@ -1,10 +1,12 @@
 import fs from "fs";
 import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
-import generate from "@babel/generator";
+import babelTraverse from "@babel/traverse";
+import babelGenerate from "@babel/generator";
 import path from "path";
 import babelTypes from "@babel/types";
 
+const traverse = babelTraverse.default;
+const generate = babelGenerate.default;
 /**
  * khai báo constant để không hard code
  */
@@ -131,7 +133,7 @@ class RefactorJS {
         });
       },
     };
-    traverse.default(ast, optionTraverse);
+    traverse(ast, optionTraverse);
   }
 
   /**
@@ -232,7 +234,7 @@ class RefactorJS {
   splitFile(filePath, extractConfig) {
     let me = this;
     // đọc toàn bộ source code
-    const code = fs.readFileSync(filePath, _encodeType);
+    const code = fs.readFileSync(filePath, me._encodeType);
 
     // đọc ra cấu trúc abstract syntax tree của code javascript
     const ast = me.parseSource(code);
@@ -263,7 +265,7 @@ class RefactorJS {
       comments: true,
     }).code;
 
-    fs.writeFileSync(filePath, modifiedCode, _encodeType);
+    fs.writeFileSync(filePath, modifiedCode, me._encodeType);
 
     return {
       extractedItems,
@@ -276,7 +278,7 @@ class RefactorJS {
    */
   createFolderOutput(extractConfig) {
     let arrayFolder = new Set(extractConfig.map((x) => x.outputDir));
-    if (arrayFolder && arrayFolder.length > 0) {
+    if (arrayFolder && arrayFolder.size > 0) {
       arrayFolder.forEach((outputDir) => {
         if (outputDir) {
           fs.mkdirSync(outputDir, { recursive: true });
@@ -325,7 +327,6 @@ class RefactorJS {
     importsToAdd,
     notFound
   ) {
-    let me = this;
     traverse(ast, {
       FunctionDeclaration(nodePath) {
         const name = nodePath.node.id.name;
@@ -409,12 +410,12 @@ class RefactorJS {
     const newAst = babelTypes.program([exportStatement], [], "module");
 
     const extractedCode = generate(newAst, {
-      retainLines: true,
+      retainLines: false,
       comments: true,
     }).code;
 
     // Write the extracted file
-    fs.writeFile(filePath, extractedCode, "utf8");
+    fs.writeFileSync(filePath, extractedCode, "utf8");
 
     extractedItems.push({
       name,
@@ -512,7 +513,7 @@ class RefactorJS {
     }).code;
 
     // Write the extracted file
-    fs.writeFile(filePath, extractedCode, "utf8");
+    fs.writeFileSync(filePath, extractedCode, "utf8");
 
     extractedItems.push({
       name,
@@ -550,7 +551,7 @@ class RefactorJS {
     const newAst = babelTypes.program([exportStatement], [], "module");
 
     const extractedCode = generate(newAst, {
-      retainLines: true,
+      retainLines: false,
       comments: true,
     }).code;
 

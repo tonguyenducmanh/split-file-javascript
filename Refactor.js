@@ -572,7 +572,7 @@ class RefactorJS {
     }).code;
 
     // Write the extracted file
-    fs.writeFile(filePath, extractedCode, "utf8");
+    fs.writeFileSync(filePath, extractedCode, "utf8");
 
     extractedItems.push({
       name,

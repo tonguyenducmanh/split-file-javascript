@@ -339,7 +339,7 @@ class RefactorJS {
             extractedItems,
             importsToAdd
           );
-          notFound.splice(notFound.indexOf(name), 1);
+          me.removeFromListQuery(notFound, name, currentConfig);
         }
       },
 
@@ -350,9 +350,10 @@ class RefactorJS {
             declarator.id.name &&
             extractConfig.includes(declarator.id.name)
           ) {
+            const name = declarator.id.name;
             const currentConfig = me.getCurrentItemsFromConfig(
               extractConfig,
-              declarator.id.name
+              name
             );
 
             if (
@@ -362,12 +363,12 @@ class RefactorJS {
             ) {
               me.extractFunctionVariable(
                 nodePath,
-                declarator.id.name,
+                name,
                 currentConfig,
                 extractedItems,
                 importsToAdd
               );
-              notFound.splice(notFound.indexOf(declarator.id.name), 1);
+              me.removeFromListQuery(notFound, name, currentConfig);
             }
           }
         });
@@ -385,10 +386,21 @@ class RefactorJS {
             extractedItems,
             importsToAdd
           );
-          notFound.splice(notFound.indexOf(name), 1);
+          me.removeFromListQuery(notFound, name, currentConfig);
         }
       },
     });
+  }
+
+  removeFromListQuery(notFound, name, currentConfig) {
+    if (currentConfig && currentConfig.length > 0) {
+      currentConfig.splice(name, 1);
+    }
+    if (notFound && notFound.length > 0 && currentConfig.length == 0) {
+      notFound = notFound.filter(
+        (x) => x.splitedSubName == currentConfig.splitedSubName
+      );
+    }
   }
 
   /**
@@ -415,7 +427,7 @@ class RefactorJS {
     }).code;
 
     // Write the extracted file
-    fs.writeFileSync(filePath, extractedCode, "utf8");
+    fs.appendFileSync(filePath, extractedCode, this._encodeType);
 
     extractedItems.push({
       name,
@@ -513,7 +525,7 @@ class RefactorJS {
     }).code;
 
     // Write the extracted file
-    fs.writeFileSync(filePath, extractedCode, "utf8");
+    fs.appendFileSync(filePath, extractedCode, this._encodeType);
 
     extractedItems.push({
       name,

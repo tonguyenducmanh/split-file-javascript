@@ -4,10 +4,13 @@
     "items": [
       {
         "class": "Calculator",
-        "methods": ["add", "subtract"]
+        "methods": [
+          { "name": "add", "newName": "addNumbers" },
+          { "name": "subtract", "newName": "subtractNumbers" }
+        ]
       },
-      "MathUtils",
-      "greetUser",
+      { "name": "MathUtils", "newName": "ExtendedMath" },
+      { "name": "greetUser", "newName": "sayHello" },
       "performCalculations"
     ],
     "outputDir": "./output/",
@@ -21,7 +24,7 @@
   },
   {
     "file": "test.js",
-    "items": ["Telephone"],
+    "items": [{ "name": "Telephone", "newName": "Phone" }],
     "outputDir": "./output/",
     "splitedSubName": "test-method-three"
   }

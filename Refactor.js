@@ -121,7 +121,15 @@ class RefactorJS {
     analysis.totalFunctions = analysis.functionDeclarations.length;
     analysis.totalClasses = analysis.classDeclarations.length;
   }
-
+  getTotalLineOfNode(node) {
+    let totalLength = 0;
+    if (node && node.loc) {
+      let startLine = node.loc.start ? node.loc.start.line : 0;
+      let endLine = node.loc.end ? node.loc.end.line : 0;
+      totalLength = endLine - startLine + 1;
+    }
+    return totalLength;
+  }
   /**
    * dùng thư viện @babel/traverse để phân tích code
    * @param {Object} analysis đối tượng cần lưu phân tích
@@ -135,7 +143,7 @@ class RefactorJS {
         const node = nodePath.node;
         analysis.functionDeclarations.push({
           name: node.id ? node.id.name : refactorConstant.Anonymous,
-          line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
+          totalLine: me.getTotalLineOfNode(node),
         });
       },
       FunctionExpression(nodePath) {
@@ -148,7 +156,7 @@ class RefactorJS {
         }
         analysis.functionDeclarations.push({
           name: node.id ? node.id.name : me.getVariableName(nodePath),
-          line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
+          totalLine: me.getTotalLineOfNode(node),
         });
       },
       ArrowFunctionExpression(nodePath) {
@@ -161,19 +169,17 @@ class RefactorJS {
         }
         analysis.functionDeclarations.push({
           name: me.getVariableName(nodePath),
-          line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
+          totalLine: me.getTotalLineOfNode(node),
         });
       },
       ClassDeclaration(nodePath) {
         const node = nodePath.node;
         const className = node.id ? node.id.name : refactorConstant.Anonymous;
-        const classLine = node.loc
-          ? node.loc.start.line
-          : refactorConstant.Unknown;
+        const classLine = me.getTotalLineOfNode(node);
 
         let classInfo = {
           name: className,
-          line: classLine,
+          totalLine: classLine,
           methods: [], // Thêm trường này để lưu trữ các method con
         };
 
@@ -187,9 +193,7 @@ class RefactorJS {
               if (nameClassMethod != "constructor") {
                 classInfo.methods.push({
                   name: nameClassMethod,
-                  line: classBodyNode.loc
-                    ? classBodyNode.loc.start.line
-                    : refactorConstant.Unknown,
+                  totalLine: me.getTotalLineOfNode(classBodyNode),
                 });
               }
             }

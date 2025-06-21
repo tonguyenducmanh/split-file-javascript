@@ -4,7 +4,7 @@
 
 [Refactor.js](Refactor.js)
 
-trong file Refactor.js có 2 hàm quan trọng là analyzeFile() dùng để thống kê xem file nguồn có những method, class, variable nào, số dòng của từng method, class
+trong file Refactor.js có 2 hàm quan trọng là analyzeFiles() dùng để thống kê xem file nguồn có những method, class, variable nào, số dòng của từng method, class
 
 hàm splitFiles() được dùng để chia nhỏ file theo config của người dùng truyền vào, có thể là 1 biến hoặc gọi từ file json
 
@@ -12,7 +12,37 @@ hàm splitFiles() được dùng để chia nhỏ file theo config của ngườ
 
 [demo](index.js)
 
-## cấu trúc chung của file config json
+## cấu trúc của kết quả sau khi phân tích analyzeFiles như bên dưới, copy vào cho AI gen từ mẫu prompt sau
+
+[PROMPT](PROMPT.md)
+
+```
+[
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
+    "functionDeclarations": [
+      { "name": "greetUser", "totalLine": 3 },
+      { "name": "calculateSum", "totalLine": 3 },
+    ],
+    "classDeclarations": [
+      {
+        "name": "Telephone",
+        "totalLine": 21,
+        "methods": [
+          { "name": "add", "totalLine": 5 },
+          { "name": "subtract", "totalLine": 5 },
+          { "name": "getnumber", "totalLine": 3 }
+        ]
+      },
+    ],
+    "totalFunctions": 6,
+    "totalClasses": 3
+  }
+]
+
+```
+
+## cấu trúc chung của file config json để chạy tool
 
 ```
 
@@ -59,31 +89,3 @@ trong items sẽ là mảng các tên bằng string, nếu nhiều hàm trùng t
 trường hợp muốn tách method trong class thì phải khai báo rõ object gồm "class" là tên class và "methods" là mảng các method cần tách
 
 "splitedSubName" : sub tên của file đã tách => khi tách xong sẽ nằm cùng cấp với file gốc
-
-## cấu trúc của kết quả sau khi phân tích như bên dưới, copy vào cho chat gpt phân tách thành mẫu bên trên
-
-```
-[
-  {
-    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
-    "functionDeclarations": [
-      { "name": "greetUser", "totalLine": 3 },
-      { "name": "calculateSum", "totalLine": 3 },
-    ],
-    "classDeclarations": [
-      {
-        "name": "Telephone",
-        "totalLine": 21,
-        "methods": [
-          { "name": "add", "totalLine": 5 },
-          { "name": "subtract", "totalLine": 5 },
-          { "name": "getnumber", "totalLine": 3 }
-        ]
-      },
-    ],
-    "totalFunctions": 6,
-    "totalClasses": 3
-  }
-]
-
-```

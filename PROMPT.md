@@ -6,52 +6,6 @@ Nếu số dòng vượt quá 500 thì mới tạo nhóm mới
 Số nhóm tối đa là 5 nhóm
 Danh sách phương thức được lưu theo từng file như bên dưới:
 
-```
-[
-  {
-    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
-    "functionDeclarations": [
-      { "name": "greetUser", "totalLine": 3 },
-      { "name": "calculateSum", "totalLine": 3 },
-      { "name": "multiplyNumbers", "totalLine": 3 },
-      { "name": "divideNumbers", "totalLine": 6 },
-      { "name": "performCalculations", "totalLine": 20 },
-      { "name": "Anonymous", "totalLine": 1 }
-    ],
-    "classDeclarations": [
-      {
-        "name": "Telephone",
-        "totalLine": 21,
-        "methods": [
-          { "name": "add", "totalLine": 5 },
-          { "name": "subtract", "totalLine": 5 },
-          { "name": "getnumber", "totalLine": 3 }
-        ]
-      },
-      {
-        "name": "Calculator",
-        "totalLine": 21,
-        "methods": [
-          { "name": "add", "totalLine": 5 },
-          { "name": "subtract", "totalLine": 5 },
-          { "name": "getHistory", "totalLine": 3 }
-        ]
-      },
-      {
-        "name": "MathUtils",
-        "totalLine": 9,
-        "methods": [
-          { "name": "square", "totalLine": 3 },
-          { "name": "cube", "totalLine": 3 }
-        ]
-      }
-    ],
-    "totalFunctions": 6,
-    "totalClasses": 3
-  }
-]
-```
-
 Yêu cầu đặc biệt
 Bạn hãy đảm bảo tất cả các phương thức đều được phân nhóm và không có phương thức nào được phân vào nhiều nhóm, trường hợp không phân được vào nhóm phù hợp thì hãy chia vào nhóm Other
 

@@ -55,6 +55,64 @@ class RefactorJS {
 
     return analysis;
   }
+  createFolderOutput(saveResultPath) {
+    if (saveResultPath) {
+      fs.mkdirSync(saveResultPath, { recursive: true });
+    }
+  }
+
+  /**
+   * phân tích cấu trúc và các method, function có trong 1 file javascript
+   * @param {String} folderPath đường dẫn folder để lấy các file cần thống kê
+   * @param {String} saveResultPath đường dẫn folder để lưu kết quả nếu có
+   */
+  analyzeFiles(folderPath, saveResultPath) {
+    let analysis = [];
+    if (folderPath) {
+      let allFile = this.findAllJsFiles(folderPath);
+      if (allFile && allFile.length > 0) {
+        allFile.forEach((item) => {
+          let singleAnalysis = this.analyzeFile(item);
+          if (singleAnalysis) {
+            analysis.push(singleAnalysis);
+          }
+        });
+      }
+    }
+    if (saveResultPath) {
+      this.createFolderOutput(saveResultPath);
+      let resultPath = path.join(saveResultPath, "result.json");
+      fs.writeFileSync(resultPath, JSON.stringify(analysis), this._encodeType);
+    }
+    return analysis;
+  }
+
+  /**
+   * Tìm tất cả các file JavaScript trong một thư mục (và các thư mục con).
+   * @param {string} dirPath - Đường dẫn đến thư mục cần quét.
+   * @returns {string[]} Một mảng chứa đường dẫn tuyệt đối của tất cả các file .js tìm thấy.
+   */
+  findAllJsFiles(dirPath) {
+    let jsFiles = []; // Mảng để lưu trữ các file .js tìm thấy
+
+    // Đọc tất cả các mục (file và thư mục con) trong đường dẫn đã cho
+    const items = fs.readdirSync(dirPath);
+
+    for (const item of items) {
+      const itemPath = path.join(dirPath, item); // Tạo đường dẫn đầy đủ cho từng mục
+      let fullPathItem = path.resolve(itemPath);
+      const stats = fs.statSync(itemPath); // Lấy thông tin về mục (file hay thư mục)
+
+      if (stats.isFile() && path.extname(item) === ".js") {
+        // Nếu là file và có đuôi .js, thêm vào danh sách
+        jsFiles.push(fullPathItem);
+      } else if (stats.isDirectory()) {
+        // Nếu là thư mục, đệ quy gọi lại hàm để quét sâu hơn
+        jsFiles = jsFiles.concat(this.findAllJsFiles(itemPath));
+      }
+    }
+    return jsFiles;
+  }
 
   /**
    * tính tổng

@@ -6,7 +6,7 @@ let analize = Refactor.analyzeFile(
 );
 let analizes = Refactor.analyzeFiles(
   "D:/code/my code/split-file-javascript/demo/test/",
-  "./result/"
+  "D:/code/my code/split-file-javascript/demo/result/"
 );
 
 const code = fs.readFileSync(

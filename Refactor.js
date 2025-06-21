@@ -7,6 +7,7 @@ import babelTypes from "@babel/types";
 
 const traverse = babelTraverse.default;
 const generate = babelGenerate.default;
+
 /**
  * khai báo constant để không hard code
  */
@@ -18,6 +19,10 @@ const refactorConstant = {
   Property: "Property",
   Anonymous: "Anonymous",
   Unknown: "Unknown",
+  CallExpression: "CallExpression", // Thêm CallExpression
+  FunctionDeclaration: "FunctionDeclaration", // Thêm để dễ tham chiếu
+  FunctionExpression: "FunctionExpression", // Thêm để dễ tham chiếu
+  ArrowFunctionExpression: "ArrowFunctionExpression", // Thêm để dễ tham chiếu
 };
 
 /**
@@ -47,14 +52,30 @@ class RefactorJS {
     // khởi tạo object lưu báo cáo về file js
     const analysis = this.initNewAnalysisCode(filePath);
 
-    // tạo báo cáo file js
-    this.traverseCodeForAnalyze(analysis, ast);
+    // tạo báo cáo file js (chỉ thu thập khai báo ban đầu)
+    this.traverseCodeForAnalyzeDeclarations(analysis, ast);
+
+    // Tạo một bản đồ để dễ dàng tra cứu thông tin hàm/lớp bằng tên
+    const functionMap = new Map();
+    analysis.functionDeclarations.forEach((func) =>
+      functionMap.set(func.name, func)
+    );
+    analysis.classDeclarations.forEach((cls) => {
+      functionMap.set(cls.name, cls); // Thêm class
+      cls.methods.forEach((method) =>
+        functionMap.set(`${cls.name}.${method.name}`, method)
+      ); // Thêm method của class
+    });
+
+    // Thêm bước duyệt mới để phân tích các lời gọi hàm
+    this.traverseCodeForAnalyzeCalls(analysis, ast, functionMap);
 
     // tính tổng
     this.caculateTotal(analysis);
 
     return analysis;
   }
+
   createFolderOutput(saveResultPath) {
     if (saveResultPath) {
       fs.mkdirSync(saveResultPath, { recursive: true });
@@ -121,6 +142,7 @@ class RefactorJS {
     analysis.totalFunctions = analysis.functionDeclarations.length;
     analysis.totalClasses = analysis.classDeclarations.length;
   }
+
   getTotalLineOfNode(node) {
     let totalLength = 0;
     if (node && node.loc) {
@@ -130,12 +152,13 @@ class RefactorJS {
     }
     return totalLength;
   }
+
   /**
-   * dùng thư viện @babel/traverse để phân tích code
+   * dùng thư viện @babel/traverse để phân tích code và thu thập khai báo hàm/lớp.
    * @param {Object} analysis đối tượng cần lưu phân tích
    * @param {Object} ast cấu trúc abstract syntax tree của file javascript
    */
-  traverseCodeForAnalyze(analysis, ast) {
+  traverseCodeForAnalyzeDeclarations(analysis, ast) {
     let me = this;
 
     let optionTraverse = {
@@ -144,10 +167,14 @@ class RefactorJS {
         analysis.functionDeclarations.push({
           name: node.id ? node.id.name : refactorConstant.Anonymous,
           totalLine: me.getTotalLineOfNode(node),
+          startLine: node.loc ? node.loc.start.line : null,
+          endLine: node.loc ? node.loc.end.line : null,
+          references: [], // Khởi tạo mảng references
         });
       },
       FunctionExpression(nodePath) {
         const node = nodePath.node;
+        // Bỏ qua các FunctionExpression là method của class hoặc property
         if (
           nodePath.parent.type === refactorConstant.MethodDefinition ||
           nodePath.parent.type === refactorConstant.Property
@@ -157,10 +184,14 @@ class RefactorJS {
         analysis.functionDeclarations.push({
           name: node.id ? node.id.name : me.getVariableName(nodePath),
           totalLine: me.getTotalLineOfNode(node),
+          startLine: node.loc ? node.loc.start.line : null,
+          endLine: node.loc ? node.loc.end.line : null,
+          references: [], // Khởi tạo mảng references
         });
       },
       ArrowFunctionExpression(nodePath) {
         const node = nodePath.node;
+        // Bỏ qua các ArrowFunctionExpression là method của class hoặc property
         if (
           nodePath.parent.type === refactorConstant.MethodDefinition ||
           nodePath.parent.type === refactorConstant.Property
@@ -170,6 +201,9 @@ class RefactorJS {
         analysis.functionDeclarations.push({
           name: me.getVariableName(nodePath),
           totalLine: me.getTotalLineOfNode(node),
+          startLine: node.loc ? node.loc.start.line : null,
+          endLine: node.loc ? node.loc.end.line : null,
+          references: [], // Khởi tạo mảng references
         });
       },
       ClassDeclaration(nodePath) {
@@ -180,7 +214,10 @@ class RefactorJS {
         let classInfo = {
           name: className,
           totalLine: classLine,
+          startLine: node.loc ? node.loc.start.line : null,
+          endLine: node.loc ? node.loc.end.line : null,
           methods: [], // Thêm trường này để lưu trữ các method con
+          references: [], // Khởi tạo mảng references cho class
         };
 
         // Duyệt qua body của class để tìm các method
@@ -190,10 +227,18 @@ class RefactorJS {
               let nameClassMethod = classBodyNode.key
                 ? classBodyNode.key.name
                 : refactorConstant.Anonymous;
-              if (nameClassMethod != "constructor") {
+              if (nameClassMethod !== "constructor") {
+                // Bỏ qua constructor
                 classInfo.methods.push({
                   name: nameClassMethod,
                   totalLine: me.getTotalLineOfNode(classBodyNode),
+                  startLine: classBodyNode.loc
+                    ? classBodyNode.loc.start.line
+                    : null,
+                  endLine: classBodyNode.loc
+                    ? classBodyNode.loc.end.line
+                    : null,
+                  references: [], // Khởi tạo mảng references cho method
                 });
               }
             }
@@ -203,6 +248,182 @@ class RefactorJS {
       },
     };
     traverse(ast, optionTraverse);
+  }
+
+  /**
+   * Dùng thư viện @babel/traverse để phân tích các lời gọi hàm và cập nhật trường references.
+   * Đây là một bước duyệt riêng sau khi đã thu thập tất cả các khai báo.
+   * @param {Object} analysis - Đối tượng cần lưu phân tích (đã có khai báo hàm/lớp).
+   * @param {Object} ast - Cấu trúc Abstract Syntax Tree của file JavaScript.
+   * @param {Map<string, Object>} functionMap - Bản đồ chứa tất cả các hàm/lớp/method đã được khai báo để tra cứu nhanh.
+   */
+  traverseCodeForAnalyzeCalls(analysis, ast, functionMap) {
+    let me = this;
+
+    traverse(ast, {
+      CallExpression(nodePath) {
+        const node = nodePath.node;
+        let calleeName = null; // Tên hàm được gọi
+
+        if (babelTypes.isIdentifier(node.callee)) {
+          // Ví dụ: myFunction()
+          calleeName = node.callee.name;
+        } else if (babelTypes.isMemberExpression(node.callee)) {
+          // Ví dụ: object.method(), Class.staticMethod()
+          if (babelTypes.isIdentifier(node.callee.property)) {
+            // Trường hợp object.method
+            calleeName = node.callee.property.name;
+            // Cố gắng xác định tên lớp nếu là Class.staticMethod
+            if (babelTypes.isIdentifier(node.callee.object)) {
+              const objectName = node.callee.object.name;
+              // Kiểm tra xem objectName có phải là tên lớp đã khai báo không
+              const classInfo = analysis.classDeclarations.find(
+                (cls) => cls.name === objectName
+              );
+              if (classInfo) {
+                calleeName = `${objectName}.${calleeName}`; // Định dạng ClassName.methodName
+              }
+            }
+          }
+        }
+        // Thêm logic để xử lý các loại callee khác nếu cần (ví dụ: Function.prototype.call/apply)
+        // Hiện tại chỉ tập trung vào các lời gọi trực tiếp.
+
+        if (calleeName) {
+          // Tìm hàm (hoặc method của class) chứa lời gọi này
+          const callingFunctionInfo = me.findParentFunctionOrClass(nodePath);
+
+          if (callingFunctionInfo) {
+            const {
+              name: callingFunctionName,
+              type: callingFunctionType,
+              parentName: callingFunctionParentName,
+            } = callingFunctionInfo;
+
+            // Định dạng tên hàm gọi
+            let callerIdentifier = callingFunctionName;
+            if (callingFunctionParentName) {
+              callerIdentifier = `${callingFunctionParentName}.${callingFunctionName}`;
+            }
+
+            // Tìm thông tin của hàm được gọi trong functionMap
+            const targetFunction = functionMap.get(calleeName);
+            // Kiểm tra cả các method của lớp nếu calleeName là một method độc lập
+            if (!targetFunction && calleeName.includes(".")) {
+              const [className, methodName] = calleeName.split(".");
+              const cls = functionMap.get(className);
+              if (cls && cls.methods) {
+                const method = cls.methods.find((m) => m.name === methodName);
+                if (method) {
+                  // Cập nhật calleeName để khớp với định dạng trong functionMap cho method
+                  calleeName = `${className}.${methodName}`;
+                }
+              }
+            }
+
+            // Lấy lại target function sau khi chuẩn hóa calleeName
+            const finalTargetFunction = functionMap.get(calleeName);
+
+            if (finalTargetFunction) {
+              // Thêm thông tin về hàm gọi vào trường references của hàm được gọi
+              const referenceEntry = {
+                name: callerIdentifier,
+                type: callingFunctionType,
+                startLine: node.loc ? node.loc.start.line : null,
+                endLine: node.loc ? node.loc.end.line : null,
+              };
+
+              // Đảm bảo trường references tồn tại
+              if (!finalTargetFunction.references) {
+                finalTargetFunction.references = [];
+              }
+              finalTargetFunction.references.push(referenceEntry);
+            }
+          }
+        }
+      },
+    });
+  }
+
+  /**
+   * Tìm hàm hoặc lớp cha gần nhất của một node.
+   * @param {Object} nodePath - Babel nodePath của CallExpression.
+   * @returns {{name: string, type: string, parentName?: string}|null} Thông tin về hàm/lớp cha, hoặc null nếu không tìm thấy.
+   */
+  findParentFunctionOrClass(nodePath) {
+    let currentPath = nodePath;
+    while (currentPath) {
+      const node = currentPath.node;
+
+      // Xử lý Function Declaration
+      if (node.type === refactorConstant.FunctionDeclaration) {
+        return {
+          name: node.id ? node.id.name : refactorConstant.Anonymous,
+          type: refactorConstant.FunctionDeclaration,
+        };
+      }
+      // Xử lý Function Expression (bao gồm cả arrow functions gán cho biến)
+      if (
+        node.type === refactorConstant.FunctionExpression ||
+        node.type === refactorConstant.ArrowFunctionExpression
+      ) {
+        if (
+          currentPath.parent.type === refactorConstant.VariableDeclarator &&
+          babelTypes.isIdentifier(currentPath.parent.id)
+        ) {
+          return {
+            name: currentPath.parent.id.name,
+            type: refactorConstant.VariableDeclarator,
+          };
+        }
+        if (
+          currentPath.parent.type === refactorConstant.AssignmentExpression &&
+          babelTypes.isIdentifier(currentPath.parent.left)
+        ) {
+          return {
+            name: currentPath.parent.left.name,
+            type: refactorConstant.AssignmentExpression,
+          };
+        }
+        if (
+          currentPath.parent.type === refactorConstant.Property &&
+          babelTypes.isIdentifier(currentPath.parent.key)
+        ) {
+          // Đây là một method trong Object Literal
+          return {
+            name: currentPath.parent.key.name,
+            type: refactorConstant.Property,
+          };
+        }
+        // Nếu không được gán tường minh (anonymous IIFE, callback...)
+        return { name: refactorConstant.Anonymous, type: node.type };
+      }
+      // Xử lý Class Method
+      if (node.type === refactorConstant.ClassMethod) {
+        const classNameNode = currentPath.findParent(
+          (p) => p.isClassDeclaration() || p.isClassExpression()
+        );
+        const className =
+          classNameNode && classNameNode.node.id
+            ? classNameNode.node.id.name
+            : refactorConstant.Anonymous;
+        return {
+          name: node.key.name,
+          type: refactorConstant.ClassMethod,
+          parentName: className,
+        };
+      }
+      // Xử lý Class Declaration
+      if (node.type === refactorConstant.ClassDeclaration) {
+        return {
+          name: node.id ? node.id.name : refactorConstant.Anonymous,
+          type: refactorConstant.ClassDeclaration,
+        };
+      }
+
+      currentPath = currentPath.parentPath;
+    }
+    return null; // Không tìm thấy hàm hoặc lớp cha
   }
 
   /**
@@ -410,12 +631,16 @@ class RefactorJS {
   createProxyMethod(originalMethodNode, proxyFunctionName) {
     const methodName = originalMethodNode.key.name;
 
-    const callArguments = [
-      babelTypes.thisExpression(),
-      ...originalMethodNode.params.map((p) =>
-        babelTypes.identifier(p.id ? p.id.name : p.name)
-      ),
-    ];
+    const callArguments = originalMethodNode.static
+      ? originalMethodNode.params.map((p) =>
+          babelTypes.identifier(p.id ? p.id.name : p.name)
+        )
+      : [
+          babelTypes.thisExpression(), // 'this' for instance methods
+          ...originalMethodNode.params.map((p) =>
+            babelTypes.identifier(p.id ? p.id.name : p.name)
+          ),
+        ];
 
     const returnStatement = babelTypes.returnStatement(
       babelTypes.callExpression(

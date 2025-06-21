@@ -32,7 +32,7 @@
         "methods": ["add", "subtract", "getHistory"]
       }
     ],
-    "splitedSubName": "test-calculator-class"
+    "splitedSubName": "test-calculator-class.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",

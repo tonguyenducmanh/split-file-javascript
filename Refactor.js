@@ -783,73 +783,79 @@ class RefactorJS {
           const itemConfig = cfg.items.find(
             (item) => me.getIdentifierNames(item)?.originalName === originalName
           );
+          if (typeof itemConfig === "object") {
+            let checkIsReferenceClassMethod = itemConfig.methods
+              ? itemConfig.methods.find(
+                  (x) => x.references && x.references.length > 0
+                )
+              : false;
+            if (!checkIsReferenceClassMethod) {
+              // Tách cả class với tên mới
+              const { newName } = me.getIdentifierNames(itemConfig);
+              me.addToFile(
+                originalName,
+                newName,
+                path.node,
+                cfg,
+                extractedItems,
+                importsToAdd,
+                fileNodesMap
+              );
+              path.remove();
+              me.removeFromListQuery(notFound, originalName, cfg);
+            } else if (itemConfig.methods) {
+              // Tách các method trong class
+              const methodsToExtract = new Map(
+                itemConfig.methods.map((m) => {
+                  const names = me.getIdentifierNames(m);
+                  return [names.originalName, names];
+                })
+              );
+              const updatedBody = [];
 
-          if (typeof itemConfig === "object" && !itemConfig.methods) {
-            // Tách cả class với tên mới
-            const { newName } = me.getIdentifierNames(itemConfig);
-            me.addToFile(
-              originalName,
-              newName,
-              path.node,
-              cfg,
-              extractedItems,
-              importsToAdd,
-              fileNodesMap
-            );
-            path.remove();
-            me.removeFromListQuery(notFound, originalName, cfg);
-          } else if (typeof itemConfig === "object" && itemConfig.methods) {
-            // Tách các method trong class
-            const methodsToExtract = new Map(
-              itemConfig.methods.map((m) => {
-                const names = me.getIdentifierNames(m);
-                return [names.originalName, names];
-              })
-            );
-            const updatedBody = [];
+              path.get("body.body").forEach((methodPath) => {
+                const originalMethodNode = methodPath.node;
+                const originalMethodName = originalMethodNode.key.name;
 
-            path.get("body.body").forEach((methodPath) => {
-              const originalMethodNode = methodPath.node;
-              const originalMethodName = originalMethodNode.key.name;
+                if (
+                  methodPath.isClassMethod() &&
+                  methodsToExtract.has(originalMethodName)
+                ) {
+                  const { newName: newMethodName } =
+                    methodsToExtract.get(originalMethodName);
 
-              if (
-                methodPath.isClassMethod() &&
-                methodsToExtract.has(originalMethodName)
-              ) {
-                const { newName: newMethodName } =
-                  methodsToExtract.get(originalMethodName);
+                  const standaloneFunctionNode = me.createFunctionFromMethod(
+                    originalMethodNode,
+                    newMethodName
+                  );
+                  me.addToFile(
+                    originalMethodName,
+                    newMethodName,
+                    standaloneFunctionNode,
+                    cfg,
+                    extractedItems,
+                    importsToAdd,
+                    fileNodesMap
+                  );
 
-                const standaloneFunctionNode = me.createFunctionFromMethod(
-                  originalMethodNode,
-                  newMethodName
-                );
-                me.addToFile(
-                  originalMethodName,
-                  newMethodName,
-                  standaloneFunctionNode,
-                  cfg,
-                  extractedItems,
-                  importsToAdd,
-                  fileNodesMap
-                );
+                  const proxyMethodNode = me.createProxyMethod(
+                    originalMethodNode,
+                    newMethodName
+                  );
+                  updatedBody.push(proxyMethodNode);
+                } else {
+                  updatedBody.push(originalMethodNode);
+                }
+              });
 
-                const proxyMethodNode = me.createProxyMethod(
-                  originalMethodNode,
-                  newMethodName
-                );
-                updatedBody.push(proxyMethodNode);
-              } else {
-                updatedBody.push(originalMethodNode);
-              }
-            });
-
-            path.node.body.body = updatedBody;
-            me.removeFromListQuery(
-              notFound,
-              originalName,
-              cfg,
-              Array.from(methodsToExtract.keys())
-            );
+              path.node.body.body = updatedBody;
+              me.removeFromListQuery(
+                notFound,
+                originalName,
+                cfg,
+                Array.from(methodsToExtract.keys())
+              );
+            }
           }
         }
       },

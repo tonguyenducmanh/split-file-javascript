@@ -330,12 +330,33 @@ class RefactorJS {
    */
   addImportToSourceFile(importsToAdd, ast) {
     if (importsToAdd.length > 0) {
-      const importStatements = importsToAdd.map((imp) =>
-        babelTypes.importDeclaration(
-          [babelTypes.importDefaultSpecifier(babelTypes.identifier(imp.name))],
-          babelTypes.stringLiteral(imp.path)
-        )
-      );
+      let importList = [];
+      let importStatements = [];
+      importsToAdd.forEach((imp) => {
+        let importItem = babelTypes.importDefaultSpecifier(
+          babelTypes.identifier(imp.name)
+        );
+        let currentImport = importList.find((x) => x.path == imp.path);
+
+        if (currentImport) {
+          currentImport.listItem.push(importItem);
+        } else {
+          importList.push({
+            path: imp.path,
+            listItem: [importItem],
+          });
+        }
+      });
+      if (importList && importList.length > 0) {
+        importList.forEach((item) => {
+          importStatements.push(
+            babelTypes.importDeclaration(
+              item.listItem,
+              babelTypes.stringLiteral(item.path)
+            )
+          );
+        });
+      }
 
       if (ast && ast.body) {
         ast.body.unshift(...importStatements);

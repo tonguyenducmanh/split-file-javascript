@@ -59,3 +59,45 @@ trong items sẽ là mảng các tên bằng string, nếu nhiều hàm trùng t
 trường hợp muốn tách method trong class thì phải khai báo rõ object gồm "class" là tên class và "methods" là mảng các method cần tách
 
 "splitedSubName" : sub tên của file đã tách => khi tách xong sẽ nằm cùng cấp với file gốc
+
+## cấu trúc của kết quả sau khi phân tích như bên dưới, copy vào cho chat gpt phân tách thành mẫu bên trên
+
+```
+{
+  filePath: "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
+  functionDeclarations: [
+    {
+      name: "greetUser",
+      line: 3,
+    },
+    {
+      name: "calculateSum",
+      line: 7,
+    },
+  ],
+  classDeclarations: [
+    {
+      name: "Telephone",
+      line: 22,
+      methods: [
+        {
+          name: "add",
+          line: 27,
+        },
+      ],
+    },
+    {
+      name: "Calculator",
+      line: 44,
+      methods: [
+        {
+          name: "getHistory",
+          line: 61,
+        },
+      ],
+    }
+  ],
+  totalFunctions: 6,
+  totalClasses: 3,
+}
+```

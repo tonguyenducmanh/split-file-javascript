@@ -12,6 +12,7 @@ const generate = babelGenerate.default;
  */
 const refactorConstant = {
   MethodDefinition: "MethodDefinition",
+  ClassMethod: "ClassMethod",
   VariableDeclarator: "VariableDeclarator",
   AssignmentExpression: "AssignmentExpression",
   Property: "Property",
@@ -107,10 +108,36 @@ class RefactorJS {
       },
       ClassDeclaration(nodePath) {
         const node = nodePath.node;
-        analysis.classDeclarations.push({
-          name: node.id ? node.id.name : refactorConstant.Anonymous,
-          line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
-        });
+        const className = node.id ? node.id.name : refactorConstant.Anonymous;
+        const classLine = node.loc
+          ? node.loc.start.line
+          : refactorConstant.Unknown;
+
+        let classInfo = {
+          name: className,
+          line: classLine,
+          methods: [], // Thêm trường này để lưu trữ các method con
+        };
+
+        // Duyệt qua body của class để tìm các method
+        if (node.body && node.body.type === "ClassBody") {
+          node.body.body.forEach((classBodyNode) => {
+            if (classBodyNode.type === refactorConstant.ClassMethod) {
+              let nameClassMethod = classBodyNode.key
+                ? classBodyNode.key.name
+                : refactorConstant.Anonymous;
+              if (nameClassMethod != "constructor") {
+                classInfo.methods.push({
+                  name: nameClassMethod,
+                  line: classBodyNode.loc
+                    ? classBodyNode.loc.start.line
+                    : refactorConstant.Unknown,
+                });
+              }
+            }
+          });
+        }
+        analysis.classDeclarations.push(classInfo);
       },
     };
     traverse(ast, optionTraverse);

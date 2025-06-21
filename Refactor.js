@@ -479,13 +479,10 @@ class RefactorJS {
     nodePath.remove();
   }
 
-  /**
-   * build ra đường dẫn file import vào file gốc
-   */
   buildImportPathFile(filePath) {
-    return `./${path
-      .relative(path.dirname(path.resolve(process.cwd())), filePath)
-      .replace(/\\/g, "/")}`.replace(".js", "");
+    const fromFile = path.resolve(process.cwd(), "test.js"); // Đường dẫn gốc file cần import vào
+    const importPath = path.relative(path.dirname(fromFile), filePath);
+    return `./${importPath.replace(/\\/g, "/").replace(/\.js$/, "")}`;
   }
 
   /**

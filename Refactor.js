@@ -44,7 +44,7 @@ class RefactorJS {
     const ast = this.parseSource(code);
 
     // khởi tạo object lưu báo cáo về file js
-    const analysis = this.initNewAnalysisCode();
+    const analysis = this.initNewAnalysisCode(filePath);
 
     // tạo báo cáo file js
     this.traverseCodeForAnalyze(analysis, ast);
@@ -59,10 +59,7 @@ class RefactorJS {
    * tính tổng
    */
   caculateTotal(analysis) {
-    analysis.totalFunctions =
-      analysis.functionDeclarations.length +
-      analysis.functionExpressions.length +
-      analysis.arrowFunctions.length;
+    analysis.totalFunctions = analysis.functionDeclarations.length;
     analysis.totalClasses = analysis.classDeclarations.length;
   }
 
@@ -80,9 +77,6 @@ class RefactorJS {
         analysis.functionDeclarations.push({
           name: node.id ? node.id.name : refactorConstant.Anonymous,
           line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
-          params: node.params.length,
-          async: node.async,
-          generator: node.generator,
         });
       },
       FunctionExpression(nodePath) {
@@ -93,12 +87,9 @@ class RefactorJS {
         ) {
           return;
         }
-        analysis.functionExpressions.push({
+        analysis.functionDeclarations.push({
           name: node.id ? node.id.name : me.getVariableName(nodePath),
           line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
-          params: node.params.length,
-          async: node.async,
-          generator: node.generator,
         });
       },
       ArrowFunctionExpression(nodePath) {
@@ -109,11 +100,9 @@ class RefactorJS {
         ) {
           return;
         }
-        analysis.arrowFunctions.push({
+        analysis.functionDeclarations.push({
           name: me.getVariableName(nodePath),
           line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
-          params: node.params.length,
-          async: node.async,
         });
       },
       ClassDeclaration(nodePath) {
@@ -121,8 +110,6 @@ class RefactorJS {
         analysis.classDeclarations.push({
           name: node.id ? node.id.name : refactorConstant.Anonymous,
           line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
-          superClass: node.superClass ? node.superClass.name : null,
-          methods: me.getClassMethods(node),
         });
       },
     };
@@ -133,12 +120,10 @@ class RefactorJS {
    * init default thống kê về các thông tin của 1 file
    * @returns analysis
    */
-  initNewAnalysisCode() {
+  initNewAnalysisCode(filePath) {
     return {
+      filePath: path.resolve(filePath),
       functionDeclarations: [],
-      // danh sách function dạng biểu thức
-      functionExpressions: [],
-      arrowFunctions: [],
       // danh sách class dạng khai báo
       classDeclarations: [],
       // tổng số function
@@ -201,21 +186,6 @@ class RefactorJS {
       return nodePath.parent.key.name;
     }
     return refactorConstant.Anonymous;
-  }
-
-  /**
-   * Get method names from a class declaration
-   * @param {Object} node - Class declaration node
-   * @returns {Array} Array of method names
-   */
-  getClassMethods(node) {
-    return node.body.body
-      .filter((member) => member.type === refactorConstant.MethodDefinition)
-      .map((method) => ({
-        name: method.key.name,
-        kind: method.kind,
-        static: method.static,
-      }));
   }
 
   // NEW HELPER: Trích xuất tên gốc và tên mới từ item trong config

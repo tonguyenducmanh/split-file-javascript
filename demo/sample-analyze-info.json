@@ -1,6 +1,6 @@
 [
   {
-    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "functionDeclarations": [
       { "name": "greetUser", "totalLine": 3 },
       { "name": "calculateSum", "totalLine": 3 },

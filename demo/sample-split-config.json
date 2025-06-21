@@ -1,6 +1,6 @@
 [
   {
-    "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
       {
         "class": "Calculator",
@@ -16,12 +16,12 @@
     "splitedSubName": "test_method_one.js"
   },
   {
-    "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
     "splitedSubName": "test_method_two.js"
   },
   {
-    "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [{ "name": "Telephone", "newName": "Phone" }],
     "splitedSubName": "test_method_three.js"
   }

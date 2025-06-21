@@ -2,38 +2,38 @@
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
     "functionDeclarations": [
-      { "name": "greetUser", "line": 3 },
-      { "name": "calculateSum", "line": 7 },
-      { "name": "multiplyNumbers", "line": 11 },
-      { "name": "divideNumbers", "line": 15 },
-      { "name": "performCalculations", "line": 76 },
-      { "name": "Anonymous", "line": 94 }
+      { "name": "greetUser", "totalLine": 3 },
+      { "name": "calculateSum", "totalLine": 3 },
+      { "name": "multiplyNumbers", "totalLine": 3 },
+      { "name": "divideNumbers", "totalLine": 6 },
+      { "name": "performCalculations", "totalLine": 20 },
+      { "name": "Anonymous", "totalLine": 1 }
     ],
     "classDeclarations": [
       {
         "name": "Telephone",
-        "line": 22,
+        "totalLine": 21,
         "methods": [
-          { "name": "add", "line": 27 },
-          { "name": "subtract", "line": 33 },
-          { "name": "getnumber", "line": 39 }
+          { "name": "add", "totalLine": 5 },
+          { "name": "subtract", "totalLine": 5 },
+          { "name": "getnumber", "totalLine": 3 }
         ]
       },
       {
         "name": "Calculator",
-        "line": 44,
+        "totalLine": 21,
         "methods": [
-          { "name": "add", "line": 49 },
-          { "name": "subtract", "line": 55 },
-          { "name": "getHistory", "line": 61 }
+          { "name": "add", "totalLine": 5 },
+          { "name": "subtract", "totalLine": 5 },
+          { "name": "getHistory", "totalLine": 3 }
         ]
       },
       {
         "name": "MathUtils",
-        "line": 66,
+        "totalLine": 9,
         "methods": [
-          { "name": "square", "line": 67 },
-          { "name": "cube", "line": 71 }
+          { "name": "square", "totalLine": 3 },
+          { "name": "cube", "totalLine": 3 }
         ]
       }
     ],

@@ -63,41 +63,27 @@ trường hợp muốn tách method trong class thì phải khai báo rõ object
 ## cấu trúc của kết quả sau khi phân tích như bên dưới, copy vào cho chat gpt phân tách thành mẫu bên trên
 
 ```
-{
-  filePath: "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
-  functionDeclarations: [
-    {
-      name: "greetUser",
-      line: 3,
-    },
-    {
-      name: "calculateSum",
-      line: 7,
-    },
-  ],
-  classDeclarations: [
-    {
-      name: "Telephone",
-      line: 22,
-      methods: [
-        {
-          name: "add",
-          line: 27,
-        },
-      ],
-    },
-    {
-      name: "Calculator",
-      line: 44,
-      methods: [
-        {
-          name: "getHistory",
-          line: 61,
-        },
-      ],
-    }
-  ],
-  totalFunctions: 6,
-  totalClasses: 3,
-}
+[
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test.js",
+    "functionDeclarations": [
+      { "name": "greetUser", "totalLine": 3 },
+      { "name": "calculateSum", "totalLine": 3 },
+    ],
+    "classDeclarations": [
+      {
+        "name": "Telephone",
+        "totalLine": 21,
+        "methods": [
+          { "name": "add", "totalLine": 5 },
+          { "name": "subtract", "totalLine": 5 },
+          { "name": "getnumber", "totalLine": 3 }
+        ]
+      },
+    ],
+    "totalFunctions": 6,
+    "totalClasses": 3
+  }
+]
+
 ```

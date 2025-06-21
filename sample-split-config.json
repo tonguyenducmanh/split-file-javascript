@@ -1,7 +1,15 @@
 [
   {
     "file": "test.js",
-    "items": ["Calculator", "MathUtils", "greetUser", "performCalculations"],
+    "items": [
+      {
+        "class": "Calculator",
+        "methods": ["add", "subtract"]
+      },
+      "MathUtils",
+      "greetUser",
+      "performCalculations"
+    ],
     "outputDir": "./output/",
     "splitedSubName": "test-method-one"
   },
@@ -10,5 +18,11 @@
     "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
     "outputDir": "./output/",
     "splitedSubName": "test-method-two"
+  },
+  {
+    "file": "test.js",
+    "items": ["Telephone"],
+    "outputDir": "./output/",
+    "splitedSubName": "test-method-three"
   }
 ]

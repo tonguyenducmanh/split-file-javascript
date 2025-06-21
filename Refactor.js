@@ -85,17 +85,14 @@ class RefactorJS {
           generator: node.generator,
         });
       },
-
       FunctionExpression(nodePath) {
         const node = nodePath.node;
-        // Skip if it's part of a method definition
         if (
           nodePath.parent.type === refactorConstant.MethodDefinition ||
           nodePath.parent.type === refactorConstant.Property
         ) {
           return;
         }
-
         analysis.functionExpressions.push({
           name: node.id ? node.id.name : me.getVariableName(nodePath),
           line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
@@ -104,17 +101,14 @@ class RefactorJS {
           generator: node.generator,
         });
       },
-
       ArrowFunctionExpression(nodePath) {
         const node = nodePath.node;
-        // Skip if it's part of a method definition
         if (
           nodePath.parent.type === refactorConstant.MethodDefinition ||
           nodePath.parent.type === refactorConstant.Property
         ) {
           return;
         }
-
         analysis.arrowFunctions.push({
           name: me.getVariableName(nodePath),
           line: node.loc ? node.loc.start.line : refactorConstant.Unknown,
@@ -122,7 +116,6 @@ class RefactorJS {
           async: node.async,
         });
       },
-
       ClassDeclaration(nodePath) {
         const node = nodePath.node;
         analysis.classDeclarations.push({
@@ -142,11 +135,9 @@ class RefactorJS {
    */
   initNewAnalysisCode() {
     return {
-      // danh sách function dạng khai báo function
       functionDeclarations: [],
       // danh sách function dạng biểu thức
       functionExpressions: [],
-      // danh sách function dạng arrow
       arrowFunctions: [],
       // danh sách class dạng khai báo
       classDeclarations: [],
@@ -222,7 +213,7 @@ class RefactorJS {
       .filter((member) => member.type === refactorConstant.MethodDefinition)
       .map((method) => ({
         name: method.key.name,
-        kind: method.kind, // method, constructor, get, set
+        kind: method.kind,
         static: method.static,
       }));
   }
@@ -266,7 +257,6 @@ class RefactorJS {
 
     return { extractedItems, notFound };
   }
-
   addToFile(
     name,
     node,
@@ -310,10 +300,64 @@ class RefactorJS {
     }
     return null;
   }
+  createFunctionFromMethod(methodNode, className) {
+    // const newFunctionName = `${className}_${methodNode.key.name}`;
+    const newFunctionName = methodNode.key.name;
 
+    const params = methodNode.static
+      ? methodNode.params
+      : [babelTypes.identifier("instance"), ...methodNode.params];
+
+    return babelTypes.functionDeclaration(
+      babelTypes.identifier(newFunctionName),
+      params,
+      methodNode.body,
+      methodNode.generator,
+      methodNode.async
+    );
+  }
+
+  // NEW: Function to create the proxy method
   /**
-   * tạo thư mục đầu ra trường hợp không có
+   * Tạo ra một phương thức proxy để thay thế phương thức gốc trong class.
+   * Phương thức này sẽ gọi đến hàm đã được tách ra.
+   * @param {Node} originalMethodNode - AST node của MethodDefinition gốc.
+   * @param {string} className - Tên của class cha.
+   * @returns {Node} - AST node của ClassMethod mới.
    */
+  createProxyMethod(originalMethodNode, className) {
+    const methodName = originalMethodNode.key.name;
+    // const proxyFunctionName = `${classNamer}_${methodName}`;
+    const proxyFunctionName = methodName;
+
+    // Các tham số cho lời gọi hàm (this, arg1, arg2, ...)
+    const callArguments = [
+      babelTypes.thisExpression(),
+      ...originalMethodNode.params.map((p) =>
+        babelTypes.identifier(p.id ? p.id.name : p.name)
+      ), // Handle different param structures
+    ];
+
+    // Tạo câu lệnh `return functionName(this, ...args);`
+    const returnStatement = babelTypes.returnStatement(
+      babelTypes.callExpression(
+        babelTypes.identifier(proxyFunctionName),
+        callArguments
+      )
+    );
+
+    // Tạo thân hàm mới
+    const newBody = babelTypes.blockStatement([returnStatement]);
+
+    // Tạo định nghĩa phương thức mới (ClassMethod)
+    return babelTypes.classMethod(
+      "method",
+      babelTypes.identifier(methodName),
+      originalMethodNode.params,
+      newBody
+    );
+  }
+
   createFolderOutput(extractConfig) {
     let arrayFolder = new Set(extractConfig.map((x) => x.outputDir));
     if (arrayFolder && arrayFolder.size > 0) {
@@ -371,7 +415,17 @@ class RefactorJS {
   getCurrentItemsFromConfig(extractConfig, name) {
     let result = null;
     if (extractConfig && extractConfig.length > 0 && name) {
-      result = extractConfig.find((x) => x.items.includes(name));
+      result = extractConfig.find((config) => {
+        return config.items.some((item) => {
+          if (typeof item === "string") {
+            return item === name;
+          }
+          if (typeof item === "object" && item.class) {
+            return item.class === name;
+          }
+          return false;
+        });
+      });
     }
     return result;
   }
@@ -392,7 +446,7 @@ class RefactorJS {
       FunctionDeclaration: (path) => {
         const name = path.node.id.name;
         const cfg = me.getCurrentItemsFromConfig(extractConfig, name);
-        if (cfg) {
+        if (cfg && typeof cfg.items.find((i) => i === name) === "string") {
           me.addToFile(
             name,
             path.node,
@@ -411,6 +465,7 @@ class RefactorJS {
           const cfg = me.getCurrentItemsFromConfig(extractConfig, name);
           if (
             cfg &&
+            typeof cfg.items.find((i) => i === name) === "string" &&
             (babelTypes.isFunctionExpression(decl.init) ||
               babelTypes.isArrowFunctionExpression(decl.init))
           ) {
@@ -438,78 +493,98 @@ class RefactorJS {
         const name = path.node.id.name;
         const cfg = me.getCurrentItemsFromConfig(extractConfig, name);
         if (cfg) {
-          me.addToFile(
-            name,
-            path.node,
-            cfg,
-            extractedItems,
-            importsToAdd,
-            fileNodesMap
+          const itemConfig = cfg.items.find(
+            (item) =>
+              (typeof item === "string" && item === name) ||
+              (typeof item === "object" && item.class === name)
           );
-          path.remove();
-          me.removeFromListQuery(notFound, name, cfg);
+
+          if (typeof itemConfig === "string") {
+            me.addToFile(
+              name,
+              path.node,
+              cfg,
+              extractedItems,
+              importsToAdd,
+              fileNodesMap
+            );
+            path.remove();
+            me.removeFromListQuery(notFound, name, cfg);
+          } else if (typeof itemConfig === "object" && itemConfig.methods) {
+            const methodsToExtract = new Set(itemConfig.methods);
+            const updatedBody = []; // This will be the new body of the class
+
+            path.get("body.body").forEach((methodPath) => {
+              const originalMethodNode = methodPath.node;
+              if (
+                methodPath.isClassMethod() &&
+                methodsToExtract.has(originalMethodNode.key.name)
+              ) {
+                // Step 1: Create the standalone function to be exported
+                // const newFunctionName = `${name}_${originalMethodNode.key.name}`;
+                const newFunctionName = originalMethodNode.key.name;
+                const standaloneFunctionNode = me.createFunctionFromMethod(
+                  originalMethodNode,
+                  name
+                );
+                me.addToFile(
+                  newFunctionName,
+                  standaloneFunctionNode,
+                  cfg,
+                  extractedItems,
+                  importsToAdd,
+                  fileNodesMap
+                );
+
+                // Step 2: Create and add the proxy method to the class body
+                const proxyMethodNode = me.createProxyMethod(
+                  originalMethodNode,
+                  name
+                );
+                updatedBody.push(proxyMethodNode);
+              } else {
+                // Keep the method that is not being extracted
+                updatedBody.push(originalMethodNode);
+              }
+            });
+
+            // Replace the old class body with the new one
+            path.node.body.body = updatedBody;
+            me.removeFromListQuery(notFound, name, cfg, itemConfig.methods);
+          }
         }
       },
     });
   }
 
-  removeFromListQuery(notFound, name, currentConfig) {
-    if (currentConfig?.items?.length) {
-      currentConfig.items = currentConfig.items.filter((x) => x != name);
-      // xoá config khi đã hết items
-      if (currentConfig.items.length === 0) {
-        notFound = notFound.filter(
-          (x) => x.splitedSubName != currentConfig.splitedSubName
-        );
+  removeFromListQuery(notFound, name, currentConfig, methods = null) {
+    if (!currentConfig) return;
+    if (methods) {
+      const item = currentConfig.items.find(
+        (i) => typeof i === "object" && i.class === name
+      );
+      if (item) {
+        item.methods = item.methods.filter((m) => !methods.includes(m));
+        if (item.methods.length === 0) {
+          currentConfig.items = currentConfig.items.filter((i) => i !== item);
+        }
+      }
+    } else {
+      currentConfig.items = currentConfig.items.filter((i) => i !== name);
+    }
+    if (currentConfig.items.length === 0) {
+      const index = notFound.findIndex(
+        (cfg) => cfg.splitedSubName === currentConfig.splitedSubName
+      );
+      if (index > -1) {
+        notFound.splice(index, 1);
       }
     }
   }
-  /**
-   * xuất function
-   */
-  extractFunction(nodePath, name, currentConfig, extractedItems, importsToAdd) {
-    const functionNode = nodePath.node;
-    let getOutputConfig = this.getOutputConfig(currentConfig);
-    const filePath = path.join(
-      getOutputConfig.outputDir,
-      getOutputConfig.fileName
-    );
-    const relativePath = this.buildImportPathFile(filePath);
-
-    // Create the export statement
-    const exportStatement = babelTypes.exportDefaultDeclaration(functionNode);
-
-    // Create new AST for the extracted file
-    const newAst = babelTypes.program([exportStatement], [], "module");
-
-    const extractedCode = generate(newAst, {
-      retainLines: false,
-      comments: true,
-    }).code;
-
-    // Write the extracted file
-    fs.appendFileSync(filePath, extractedCode, this._encodeType);
-
-    extractedItems.push({
-      name,
-      fileName: getOutputConfig.fileName,
-      path: filePath,
-    });
-    importsToAdd.push({ name, path: relativePath });
-
-    // Remove the original function from the AST
-    nodePath.remove();
-  }
-
   buildImportPathFile(filePath) {
-    const fromFile = path.resolve(process.cwd(), "test.js"); // Đường dẫn gốc file cần import vào
-    const importPath = path.relative(path.dirname(fromFile), filePath);
-    return `./${importPath.replace(/\\/g, "/").replace(/\.js$/, "")}`;
+    const relativePath = path.relative(process.cwd(), filePath);
+    return `./${relativePath.replace(/\\/g, "/")}`.replace(/\.js$/, "");
   }
-
-  /**
-   * lấy ra config đầu ra
-   */
   getOutputConfig(currentConfig) {
     let config = {};
     config.outputDir = currentConfig.outputDir;
@@ -520,126 +595,6 @@ class RefactorJS {
       ".js";
     return config;
   }
-
-  /**
-   * xuất function dạng khai báo biến
-   */
-  extractFunctionVariable(
-    nodePath,
-    name,
-    currentConfig,
-    extractedItems,
-    importsToAdd
-  ) {
-    let getOutputConfig = this.getOutputConfig(currentConfig);
-    const filePath = path.join(
-      getOutputConfig.outputDir,
-      getOutputConfig.fileName
-    );
-    const relativePath = this.buildImportPathFile(filePath);
-
-    // Find the specific declarator
-    const declarator = nodePath.node.declarations.find(
-      (d) => d.id.name === name
-    );
-
-    // Create function declaration from the function expression/arrow function
-    let functionDeclaration;
-    if (babelTypes.isFunctionExpression(declarator.init)) {
-      functionDeclaration = babelTypes.functionDeclaration(
-        babelTypes.identifier(name),
-        declarator.init.params,
-        declarator.init.body,
-        declarator.init.generator,
-        declarator.init.async
-      );
-    } else if (babelTypes.isArrowFunctionExpression(declarator.init)) {
-      // Convert arrow function to regular function for export
-      const body = babelTypes.isBlockStatement(declarator.init.body)
-        ? declarator.init.body
-        : babelTypes.blockStatement([
-            babelTypes.returnStatement(declarator.init.body),
-          ]);
-
-      functionDeclaration = babelTypes.functionDeclaration(
-        babelTypes.identifier(name),
-        declarator.init.params,
-        body,
-        false,
-        declarator.init.async
-      );
-    }
-
-    // Create the export statement
-    const exportStatement =
-      babelTypes.exportDefaultDeclaration(functionDeclaration);
-
-    // Create new AST for the extracted file
-    const newAst = babelTypes.program([exportStatement], [], "module");
-
-    const extractedCode = generate(newAst, {
-      retainLines: false,
-      comments: true,
-    }).code;
-
-    // Write the extracted file
-    fs.appendFileSync(filePath, extractedCode, this._encodeType);
-
-    extractedItems.push({
-      name,
-      fileName: getOutputConfig.fileName,
-      path: filePath,
-    });
-    importsToAdd.push({ name, path: relativePath });
-
-    // Remove the variable declaration or just this declarator
-    if (nodePath.node.declarations.length === 1) {
-      nodePath.remove();
-    } else {
-      nodePath.node.declarations = nodePath.node.declarations.filter(
-        (d) => d.id.name !== name
-      );
-    }
-  }
-
-  /**
-   * xuất class
-   */
-  extractClass(nodePath, name, currentConfig, extractedItems, importsToAdd) {
-    const classNode = nodePath.node;
-    let getOutputConfig = this.getOutputConfig(currentConfig);
-    const filePath = path.join(
-      getOutputConfig.outputDir,
-      getOutputConfig.fileName
-    );
-    const relativePath = this.buildImportPathFile(filePath);
-
-    // Create the export statement
-    const exportStatement = babelTypes.exportDefaultDeclaration(classNode);
-
-    // Create new AST for the extracted file
-    const newAst = babelTypes.program([exportStatement], [], "module");
-
-    const extractedCode = generate(newAst, {
-      retainLines: false,
-      comments: true,
-    }).code;
-
-    // Write the extracted file
-    fs.writeFileSync(filePath, extractedCode, "utf8");
-
-    extractedItems.push({
-      name,
-      fileName: getOutputConfig.fileName,
-      path: filePath,
-    });
-    importsToAdd.push({ name, path: relativePath });
-
-    // Remove the original class from the AST
-    nodePath.remove();
-  }
-
-  // end region method
 }
 
 export default new RefactorJS();

@@ -107,8 +107,3 @@ if (typeof module !== "undefined" && module.exports) {
     performCalculations,
   };
 }
-
-// Run if called directly
-if (require.main === module) {
-  performCalculations();
-}

@@ -335,7 +335,7 @@ class RefactorJS {
       importsToAdd.forEach((imp) => {
         let importItem = babelTypes.importSpecifier(
           babelTypes.identifier(imp.name),
-          babelTypes.stringLiteral(imp.name)
+          babelTypes.identifier(imp.name)
         );
         let currentImport = importList.find((x) => x.path == imp.path);
 

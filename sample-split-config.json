@@ -13,19 +13,19 @@
       { "name": "greetUser", "newName": "sayHello" },
       "performCalculations"
     ],
-    "outputDir": "./demo/output/",
+    "outputDir": "./output/",
     "splitedSubName": "test-method-one"
   },
   {
     "filePath": "./demo/test.js",
     "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
-    "outputDir": "./demo/output/",
+    "outputDir": "./output/",
     "splitedSubName": "test-method-two"
   },
   {
     "filePath": "./demo/test.js",
     "items": [{ "name": "Telephone", "newName": "Phone" }],
-    "outputDir": "./demo/output/",
+    "outputDir": "./output/",
     "splitedSubName": "test-method-three"
   }
 ]

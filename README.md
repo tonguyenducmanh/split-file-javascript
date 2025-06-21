@@ -17,7 +17,7 @@ hàm splitFile() được dùng để chia nhỏ file theo config của người
 ```
 [
   {
-    "filePath": "./input/test.js",
+    "filePath": "./demo/test.js",
     "items": [
       {
         "class": "Calculator",
@@ -34,13 +34,13 @@ hàm splitFile() được dùng để chia nhỏ file theo config của người
     "splitedSubName": "test-method-one"
   },
   {
-    "filePath": "./input/test.js",
+    "filePath": "./demo/test.js",
     "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
     "outputDir": "./output/",
     "splitedSubName": "test-method-two"
   },
   {
-    "filePath": "./input/test.js",
+    "filePath": "./demo/test.js",
     "items": [{ "name": "Telephone", "newName": "Phone" }],
     "outputDir": "./output/",
     "splitedSubName": "test-method-three"
@@ -61,6 +61,6 @@ trong items sẽ là mảng các tên bằng string, nếu nhiều hàm trùng t
 
 trường hợp muốn tách method trong class thì phải khai báo rõ object gồm "class" là tên class và "methods" là mảng các method cần tách
 
-"outputDir" : relative path tới file đã tách, lưu ý, nếu dùng relative path thì file cần tách phải nằm ở cấp nhỏ hơn của file source
+"outputDir" : relative path tới file đã tách, lưu ý, relative này tính từ file source, vd file source là ./demo/ thì chỗ này mà điền ./output/ thì file mới sẽ nằm ở ./demo/output/
 
 "splitedSubName" : sub tên của file đã tách, có thể theo nghiệp vụ mong muốn đặt riêng

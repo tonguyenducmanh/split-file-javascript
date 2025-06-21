@@ -12,7 +12,7 @@
       },
       "performCalculations"
     ],
-    "splitedSubName": "test-calculation-helpers"
+    "splitedSubName": "test-calculation-helpers.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
@@ -22,7 +22,7 @@
         "methods": ["add", "subtract", "getnumber"]
       }
     ],
-    "splitedSubName": "test-telephone-class"
+    "splitedSubName": "test-telephone-class.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
@@ -37,6 +37,6 @@
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": ["Anonymous"],
-    "splitedSubName": "test-other"
+    "splitedSubName": "test-other.js"
   }
 ]

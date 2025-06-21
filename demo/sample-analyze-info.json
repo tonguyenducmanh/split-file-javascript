@@ -132,7 +132,14 @@
             "references": []
           }
         ],
-        "references": []
+        "references": [
+          {
+            "name": "performCalculations",
+            "type": "NewExpression",
+            "startLine": 77,
+            "endLine": 77
+          }
+        ]
       },
       {
         "name": "MathUtils",

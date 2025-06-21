@@ -20,6 +20,7 @@ const refactorConstant = {
   Anonymous: "Anonymous",
   Unknown: "Unknown",
   CallExpression: "CallExpression", // Thêm CallExpression
+  NewExpression: "NewExpression", // Thêm NewExpression
   FunctionDeclaration: "FunctionDeclaration", // Thêm để dễ tham chiếu
   FunctionExpression: "FunctionExpression", // Thêm để dễ tham chiếu
   ArrowFunctionExpression: "ArrowFunctionExpression", // Thêm để dễ tham chiếu
@@ -338,6 +339,42 @@ class RefactorJS {
                 finalTargetFunction.references = [];
               }
               finalTargetFunction.references.push(referenceEntry);
+            }
+          }
+        }
+      },
+      NewExpression(nodePath) {
+        // Thêm NewExpression
+        const node = nodePath.node;
+        if (babelTypes.isIdentifier(node.callee)) {
+          const className = node.callee.name;
+          // Tìm thông tin class trong analysis
+          const classInfo = analysis.classDeclarations.find(
+            (cls) => cls.name === className
+          );
+          if (classInfo) {
+            const callingFunctionInfo = me.findParentFunctionOrClass(nodePath);
+            if (callingFunctionInfo) {
+              const {
+                name: callingFunctionName,
+                type: callingFunctionType,
+                parentName: callingFunctionParentName,
+              } = callingFunctionInfo;
+              let callerIdentifier = callingFunctionName;
+              if (callingFunctionParentName) {
+                callerIdentifier = `${callingFunctionParentName}-${callingFunctionName}`;
+              }
+
+              const referenceEntry = {
+                name: callingFunctionName,
+                type: refactorConstant.NewExpression, // Đánh dấu là khởi tạo class
+                startLine: node.loc ? node.loc.start.line : null,
+                endLine: node.loc ? node.loc.end.line : null,
+              };
+              if (!classInfo.references) {
+                classInfo.references = [];
+              }
+              classInfo.references.push(referenceEntry);
             }
           }
         }
@@ -861,7 +898,6 @@ class RefactorJS {
       },
     });
   }
-
   removeFromListQuery(notFound, name, currentConfig, methods = null) {
     if (!currentConfig) return;
     const getItemName = (item) =>

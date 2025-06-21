@@ -7,7 +7,7 @@
   },
   {
     "file": "test.js",
-    "items": ["calculateSum", "multiplyNumbers"],
+    "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
     "outputDir": "./output/",
     "splitedSubName": "test-method-two"
   }

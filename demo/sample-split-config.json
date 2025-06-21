@@ -6,37 +6,45 @@
       "calculateSum",
       "multiplyNumbers",
       "divideNumbers",
+      "performCalculations",
       {
         "class": "MathUtils",
         "methods": ["square", "cube"]
-      },
-      "performCalculations"
+      }
     ],
-    "splitedSubName": "test-calculation-helpers.js"
+    "splitedSubName": "test_calculation.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
       {
         "class": "Telephone",
-        "methods": ["add", "subtract", "getnumber"]
+        "methods": [
+          { "name": "add", "newName": "CalAdd" },
+          { "name": "subtract", "newName": "CalSubtract" },
+          { "name": "getnumber", "newName": "CalGetNumber" }
+        ]
       }
     ],
-    "splitedSubName": "test-telephone-class.js"
+    "splitedSubName": "test_telephone.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
       {
         "class": "Calculator",
-        "methods": ["add", "subtract", "getHistory"]
+        "methods": [
+          { "name": "add", "newName": "CalAdd" },
+          { "name": "subtract", "newName": "CalSubtract" },
+          { "name": "getHistory", "newName": "CalGetHistory" }
+        ]
       }
     ],
-    "splitedSubName": "test-calculator-class.js"
+    "splitedSubName": "test_calculator.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
-    "items": ["Anonymous"],
-    "splitedSubName": "test-other.js"
+    "items": [{ "name": "Anonymous", "newName": "AnonymousFunction" }],
+    "splitedSubName": "test_other.js"
   }
 ]

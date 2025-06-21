@@ -9,6 +9,7 @@ Danh sách phương thức được lưu theo từng file như bên dưới:
 Yêu cầu đặc biệt
 Bạn hãy đảm bảo tất cả các phương thức đều được phân nhóm và không có phương thức nào được phân vào nhiều nhóm, trường hợp không phân được vào nhóm phù hợp thì hãy chia vào nhóm Other
 Nếu có method, class nào mà có thông tin references thì phải kéo những method, class có liên quan vào chung 1 nhóm
+Trường hợp 1 hàm ở trong class trùng tên với hàm bên ngoài, phải thêm tiền tố là class để phân biệt
 
 format trả về phải theo dạng như bên dưới:
 

@@ -53,7 +53,7 @@ hàm splitFile() được dùng để chia nhỏ file theo config của người
 
 Trong đó:
 
-"filePath" : path tới file source
+"filePath" : relative path tới file source
 
 "items" : danh sách các method, class, variable của file gốc sẽ được mang sang file mới
 
@@ -61,6 +61,6 @@ trong items sẽ là mảng các tên bằng string, nếu nhiều hàm trùng t
 
 trường hợp muốn tách method trong class thì phải khai báo rõ object gồm "class" là tên class và "methods" là mảng các method cần tách
 
-"outputDir" : thư mục của file đã tách
+"outputDir" : relative path tới file đã tách, lưu ý, nếu dùng relative path thì file cần tách phải nằm ở cấp nhỏ hơn của file source
 
 "splitedSubName" : sub tên của file đã tách, có thể theo nghiệp vụ mong muốn đặt riêng

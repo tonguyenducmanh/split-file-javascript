@@ -1,7 +1,7 @@
 [
   {
     "file": "test.js",
-    "items": ["Calculator", "greetUser", "performCalculations"],
+    "items": ["Calculator", "MathUtils", "greetUser", "performCalculations"],
     "outputDir": "./output/",
     "splitedSubName": "test-method-one"
   },

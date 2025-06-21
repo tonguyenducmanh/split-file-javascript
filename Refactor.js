@@ -345,11 +345,7 @@ class RefactorJS {
 
       VariableDeclaration(nodePath) {
         nodePath.node.declarations.forEach((declarator) => {
-          if (
-            declarator.id &&
-            declarator.id.name &&
-            extractConfig.includes(declarator.id.name)
-          ) {
+          if (declarator.id && declarator.id.name) {
             const name = declarator.id.name;
             const currentConfig = me.getCurrentItemsFromConfig(
               extractConfig,

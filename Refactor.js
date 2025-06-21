@@ -285,7 +285,7 @@ class RefactorJS {
     fileNodesMap
   ) {
     const output = this.getOutputConfig(currentConfig);
-    const key = path.join(output.outputDir, output.fileName);
+    const key = path.join(output.importCofig, output.fileName);
     if (!fileNodesMap.has(key)) fileNodesMap.set(key, []);
 
     // Đổi tên node trước khi thêm
@@ -299,7 +299,7 @@ class RefactorJS {
     extractedItems.push({
       name: newName,
       fileName: output.fileName,
-      path: key,
+      path: this.getFullPathForNewFile(currentConfig),
     });
     importsToAdd.push({ originalName, newName, path: relativePath });
   }
@@ -611,9 +611,14 @@ class RefactorJS {
   }
   getOutputConfig(currentConfig) {
     let config = {};
-    config.outputDir = "./";
+    config.importCofig = "./";
     config.fileName = currentConfig.splitedSubName;
     return config;
+  }
+  getFullPathForNewFile(currentConfig) {
+    let soureFilePath = path.dirname(currentConfig.filePath);
+    let fileName = currentConfig.splitedSubName;
+    return path.join(soureFilePath, fileName);
   }
 }
 

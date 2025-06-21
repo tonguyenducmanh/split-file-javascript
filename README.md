@@ -10,7 +10,7 @@ hàm splitFiles() được dùng để chia nhỏ file theo config của ngườ
 
 ## file demo việc tách file theo config có sẵn
 
-[demo](index.js)
+[demo](./demo/index.js)
 
 ## cấu trúc của kết quả sau khi phân tích analyzeFiles như bên dưới, copy vào cho AI gen từ mẫu prompt sau
 

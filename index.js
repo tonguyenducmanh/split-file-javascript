@@ -5,19 +5,13 @@ let analize = Refactor.analyzeFile("test.js");
 let extractConfig = [
   {
     file: "test.js",
-    items: [
-      "calculateSum",
-      "multiplyNumbers",
-      "divideNumbers",
-      "Calculator",
-      "performCalculations",
-    ],
+    items: ["Calculator", "MathUtils", "greetUser", "performCalculations"],
     outputDir: "./output/",
     splitedSubName: "test-method-one",
   },
   {
     file: "test.js",
-    items: ["greetUser"],
+    items: ["calculateSum", "multiplyNumbers"],
     outputDir: "./output/",
     splitedSubName: "test-method-two",
   },

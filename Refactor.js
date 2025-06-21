@@ -393,13 +393,17 @@ class RefactorJS {
   }
 
   removeFromListQuery(notFound, name, currentConfig) {
-    if (currentConfig && currentConfig.length > 0) {
-      currentConfig.splice(name, 1);
-    }
-    if (notFound && notFound.length > 0 && currentConfig.length == 0) {
-      notFound = notFound.filter(
-        (x) => x.splitedSubName == currentConfig.splitedSubName
-      );
+    if (
+      currentConfig &&
+      currentConfig.items &&
+      currentConfig.items.length > 0
+    ) {
+      currentConfig.items.splice(name, 1);
+      if (notFound && notFound.length > 0 && currentConfig.items.length == 0) {
+        notFound = notFound.filter(
+          (x) => x.splitedSubName == currentConfig.splitedSubName
+        );
+      }
     }
   }
 

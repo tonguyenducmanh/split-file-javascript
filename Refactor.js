@@ -333,8 +333,9 @@ class RefactorJS {
       let importList = [];
       let importStatements = [];
       importsToAdd.forEach((imp) => {
-        let importItem = babelTypes.importDefaultSpecifier(
-          babelTypes.identifier(imp.name)
+        let importItem = babelTypes.importSpecifier(
+          babelTypes.identifier(imp.name),
+          babelTypes.stringLiteral(imp.name)
         );
         let currentImport = importList.find((x) => x.path == imp.path);
 
@@ -358,8 +359,8 @@ class RefactorJS {
         });
       }
 
-      if (ast && ast.body) {
-        ast.body.unshift(...importStatements);
+      if (ast && ast.program && ast.program.body) {
+        ast.program.body.unshift(...importStatements);
       }
     }
   }

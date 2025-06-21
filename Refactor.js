@@ -240,7 +240,6 @@ class RefactorJS {
       extractConfig.forEach((config) => {
         const code = fs.readFileSync(config.filePath, this._encodeType);
         const ast = this.parseSource(code);
-        this.createFolderOutput(extractConfig);
 
         const importsToAdd = [];
 
@@ -374,18 +373,6 @@ class RefactorJS {
       newBody
     );
   }
-
-  createFolderOutput(extractConfig) {
-    let arrayFolder = new Set(extractConfig.map((x) => x.outputDir));
-    if (arrayFolder && arrayFolder.size > 0) {
-      arrayFolder.forEach((outputDir) => {
-        if (outputDir) {
-          fs.mkdirSync(outputDir, { recursive: true });
-        }
-      });
-    }
-  }
-
   // MODIFIED: Tạo import với alias: import { newName as originalName } from '...'
   addImportToSourceFile(importsToAdd, ast) {
     if (importsToAdd.length > 0) {
@@ -624,12 +611,8 @@ class RefactorJS {
   }
   getOutputConfig(currentConfig) {
     let config = {};
-    config.outputDir = currentConfig.outputDir;
-    config.fileName =
-      path.basename(currentConfig.filePath).replace(".js", "") +
-      "." +
-      currentConfig.splitedSubName +
-      ".js";
+    config.outputDir = "./";
+    config.fileName = currentConfig.splitedSubName;
     return config;
   }
 }

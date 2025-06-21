@@ -15,9 +15,10 @@ hàm splitFile() được dùng để chia nhỏ file theo config của người
 ## cấu trúc chung của file config json
 
 ```
+
 [
   {
-    "filePath": "./demo/test.js",
+    "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
     "items": [
       {
         "class": "Calculator",
@@ -30,30 +31,26 @@ hàm splitFile() được dùng để chia nhỏ file theo config của người
       { "name": "greetUser", "newName": "sayHello" },
       "performCalculations"
     ],
-    "outputDir": "./output/",
-    "splitedSubName": "test-method-one"
+    "splitedSubName": "test-method-one.js"
   },
   {
-    "filePath": "./demo/test.js",
+    "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
     "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
-    "outputDir": "./output/",
-    "splitedSubName": "test-method-two"
+    "splitedSubName": "test-method-two.js"
   },
   {
-    "filePath": "./demo/test.js",
+    "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
     "items": [{ "name": "Telephone", "newName": "Phone" }],
-    "outputDir": "./output/",
-    "splitedSubName": "test-method-three"
+    "splitedSubName": "test-method-three.js"
   }
 ]
-
 
 
 ```
 
 Trong đó:
 
-"filePath" : relative path tới file source
+"filePath" : full path tới file source
 
 "items" : danh sách các method, class, variable của file gốc sẽ được mang sang file mới
 
@@ -61,6 +58,4 @@ trong items sẽ là mảng các tên bằng string, nếu nhiều hàm trùng t
 
 trường hợp muốn tách method trong class thì phải khai báo rõ object gồm "class" là tên class và "methods" là mảng các method cần tách
 
-"outputDir" : relative path tới file đã tách, lưu ý, relative này tính từ file source, vd file source là ./demo/ thì chỗ này mà điền ./output/ thì file mới sẽ nằm ở ./demo/output/
-
-"splitedSubName" : sub tên của file đã tách, có thể theo nghiệp vụ mong muốn đặt riêng
+"splitedSubName" : sub tên của file đã tách => khi tách xong sẽ nằm cùng cấp với file gốc

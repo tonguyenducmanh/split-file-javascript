@@ -626,7 +626,7 @@ class RefactorJS {
     let config = {};
     config.outputDir = currentConfig.outputDir;
     config.fileName =
-      currentConfig.filePath.replace(".js", "") +
+      path.basename(currentConfig.filePath).replace(".js", "") +
       "." +
       currentConfig.splitedSubName +
       ".js";

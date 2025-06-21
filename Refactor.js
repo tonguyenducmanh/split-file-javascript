@@ -232,43 +232,46 @@ class RefactorJS {
     return null;
   }
 
-  splitFile(filePath, extractConfig) {
+  splitFile(extractConfig) {
     let me = this;
-    const code = fs.readFileSync(filePath, this._encodeType);
-    const ast = this.parseSource(code);
-    this.createFolderOutput(extractConfig);
-
     const extractedItems = [];
     const notFound = [...extractConfig];
-    const importsToAdd = [];
+    if (extractConfig && extractConfig.length > 0) {
+      extractConfig.forEach((config) => {
+        const code = fs.readFileSync(config.filePath, this._encodeType);
+        const ast = this.parseSource(code);
+        this.createFolderOutput(extractConfig);
 
-    // Dictionary để gom node theo file đích
-    const fileNodesMap = new Map();
+        const importsToAdd = [];
 
-    this.traverseCodeForSplit(
-      ast,
-      extractConfig,
-      me,
-      notFound,
-      extractedItems,
-      importsToAdd,
-      fileNodesMap
-    );
+        // Dictionary để gom node theo file đích
+        const fileNodesMap = new Map();
 
-    // Ghi từng file 1 lần
-    for (const [filePath, items] of fileNodesMap.entries()) {
-      const exportNodes = items.map(({ node }) =>
-        babelTypes.exportNamedDeclaration(node, [])
-      );
-      const newAst = babelTypes.program(exportNodes, [], "module");
-      const code = generate(newAst).code;
-      fs.writeFileSync(filePath, code, this._encodeType);
+        this.traverseCodeForSplit(
+          ast,
+          extractConfig,
+          me,
+          notFound,
+          extractedItems,
+          importsToAdd,
+          fileNodesMap
+        );
+
+        // Ghi từng file 1 lần
+        for (const [filePath, items] of fileNodesMap.entries()) {
+          const exportNodes = items.map(({ node }) =>
+            babelTypes.exportNamedDeclaration(node, [])
+          );
+          const newAst = babelTypes.program(exportNodes, [], "module");
+          const code = generate(newAst).code;
+          fs.writeFileSync(filePath, code, this._encodeType);
+        }
+
+        this.addImportToSourceFile(importsToAdd, ast);
+        const modifiedCode = generate(ast, { comments: true }).code;
+        fs.writeFileSync(config.filePath, modifiedCode, this._encodeType);
+      });
     }
-
-    this.addImportToSourceFile(importsToAdd, ast);
-    const modifiedCode = generate(ast, { comments: true }).code;
-    fs.writeFileSync(filePath, modifiedCode, this._encodeType);
-
     return { extractedItems, notFound };
   }
 
@@ -623,7 +626,7 @@ class RefactorJS {
     let config = {};
     config.outputDir = currentConfig.outputDir;
     config.fileName =
-      currentConfig.file.replace(".js", "") +
+      currentConfig.filePath.replace(".js", "") +
       "." +
       currentConfig.splitedSubName +
       ".js";

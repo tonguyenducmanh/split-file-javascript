@@ -6,4 +6,4 @@ let analize = Refactor.analyzeFile("test.js");
 const code = fs.readFileSync("sample-split-config.json", "utf8");
 let extractConfig = JSON.parse(code);
 
-let splitResult = Refactor.splitFile("test.js", extractConfig);
+let splitResult = Refactor.splitFile(extractConfig);

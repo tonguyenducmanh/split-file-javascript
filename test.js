@@ -102,6 +102,7 @@ if (typeof module !== "undefined" && module.exports) {
     multiplyNumbers,
     divideNumbers,
     Calculator,
+    Telephone,
     MathUtils,
     performCalculations,
   };

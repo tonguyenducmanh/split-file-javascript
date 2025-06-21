@@ -6,7 +6,7 @@
 
 trong file Refactor.js có 2 hàm quan trọng là analyzeFile() dùng để thống kê xem file nguồn có những method, class, variable nào, số dòng của từng method, class
 
-hàm splitFile() được dùng để chia nhỏ file theo config của người dùng truyền vào, có thể là 1 biến hoặc gọi từ file json
+hàm splitFiles() được dùng để chia nhỏ file theo config của người dùng truyền vào, có thể là 1 biến hoặc gọi từ file json
 
 ## file demo việc tách file theo config có sẵn
 

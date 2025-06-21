@@ -229,7 +229,7 @@ class RefactorJS {
     return null;
   }
 
-  splitFile(extractConfig) {
+  splitFiles(extractConfig) {
     let me = this;
     const extractedItems = [];
     const notFound = [...extractConfig];

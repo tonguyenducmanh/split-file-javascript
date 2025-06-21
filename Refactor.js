@@ -389,20 +389,16 @@ class RefactorJS {
   }
 
   removeFromListQuery(notFound, name, currentConfig) {
-    if (
-      currentConfig &&
-      currentConfig.items &&
-      currentConfig.items.length > 0
-    ) {
-      currentConfig.items.splice(name, 1);
-      if (notFound && notFound.length > 0 && currentConfig.items.length == 0) {
+    if (currentConfig?.items?.length) {
+      currentConfig.items = currentConfig.items.filter((x) => x != name);
+      // xoá config khi đã hết items
+      if (currentConfig.items.length === 0) {
         notFound = notFound.filter(
-          (x) => x.splitedSubName == currentConfig.splitedSubName
+          (x) => x.splitedSubName != currentConfig.splitedSubName
         );
       }
     }
   }
-
   /**
    * xuất function
    */

@@ -376,7 +376,7 @@ class RefactorJS {
 
       ClassDeclaration(nodePath) {
         const name = nodePath.node.id.name;
-        const currentConfig = me.getCurrentItemsFromConfig(name);
+        const currentConfig = me.getCurrentItemsFromConfig(extractConfig, name);
 
         if (currentConfig) {
           me.extractClass(

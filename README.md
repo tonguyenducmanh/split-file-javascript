@@ -31,17 +31,17 @@ hàm splitFile() được dùng để chia nhỏ file theo config của người
       { "name": "greetUser", "newName": "sayHello" },
       "performCalculations"
     ],
-    "splitedSubName": "test-method-one.js"
+    "splitedSubName": "test_method_one.js"
   },
   {
     "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
     "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
-    "splitedSubName": "test-method-two.js"
+    "splitedSubName": "test_method_two.js"
   },
   {
     "filePath": "D:/code/my code/split-file-javascript/demo/test.js",
     "items": [{ "name": "Telephone", "newName": "Phone" }],
-    "splitedSubName": "test-method-three.js"
+    "splitedSubName": "test_method_three.js"
   }
 ]
 

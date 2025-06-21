@@ -366,7 +366,7 @@ class RefactorJS {
               }
 
               const referenceEntry = {
-                name: callingFunctionName,
+                name: callerIdentifier,
                 type: refactorConstant.NewExpression, // Đánh dấu là khởi tạo class
                 startLine: node.loc ? node.loc.start.line : null,
                 endLine: node.loc ? node.loc.end.line : null,

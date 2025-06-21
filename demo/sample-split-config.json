@@ -2,27 +2,41 @@
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
+      "greetUser",
+      "calculateSum",
+      "multiplyNumbers",
+      "divideNumbers",
       {
-        "class": "Calculator",
-        "methods": [
-          { "name": "add", "newName": "addNumbers" },
-          { "name": "subtract", "newName": "subtractNumbers" }
-        ]
+        "class": "MathUtils",
+        "methods": ["square", "cube"]
       },
-      { "name": "MathUtils", "newName": "ExtendedMath" },
-      { "name": "greetUser", "newName": "sayHello" },
       "performCalculations"
     ],
-    "splitedSubName": "test_method_one.js"
+    "splitedSubName": "test-calculation-helpers"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
-    "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
-    "splitedSubName": "test_method_two.js"
+    "items": [
+      {
+        "class": "Telephone",
+        "methods": ["add", "subtract", "getnumber"]
+      }
+    ],
+    "splitedSubName": "test-telephone-class"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
-    "items": [{ "name": "Telephone", "newName": "Phone" }],
-    "splitedSubName": "test_method_three.js"
+    "items": [
+      {
+        "class": "Calculator",
+        "methods": ["add", "subtract", "getHistory"]
+      }
+    ],
+    "splitedSubName": "test-calculator-class"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": ["Anonymous"],
+    "splitedSubName": "test-other"
   }
 ]

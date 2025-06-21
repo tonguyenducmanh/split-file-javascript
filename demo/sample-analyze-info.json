@@ -2,39 +2,174 @@
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "functionDeclarations": [
-      { "name": "greetUser", "totalLine": 3 },
-      { "name": "calculateSum", "totalLine": 3 },
-      { "name": "multiplyNumbers", "totalLine": 3 },
-      { "name": "divideNumbers", "totalLine": 6 },
-      { "name": "performCalculations", "totalLine": 20 },
-      { "name": "Anonymous", "totalLine": 1 }
+      {
+        "name": "greetUser",
+        "totalLine": 3,
+        "startLine": 3,
+        "endLine": 5,
+        "references": [
+          {
+            "name": "performCalculations",
+            "type": "FunctionDeclaration",
+            "startLine": 80,
+            "endLine": 80
+          }
+        ]
+      },
+      {
+        "name": "calculateSum",
+        "totalLine": 3,
+        "startLine": 7,
+        "endLine": 9,
+        "references": [
+          {
+            "name": "performCalculations",
+            "type": "FunctionDeclaration",
+            "startLine": 81,
+            "endLine": 81
+          }
+        ]
+      },
+      {
+        "name": "multiplyNumbers",
+        "totalLine": 3,
+        "startLine": 11,
+        "endLine": 13,
+        "references": [
+          {
+            "name": "performCalculations",
+            "type": "FunctionDeclaration",
+            "startLine": 82,
+            "endLine": 82
+          }
+        ]
+      },
+      {
+        "name": "divideNumbers",
+        "totalLine": 6,
+        "startLine": 15,
+        "endLine": 20,
+        "references": [
+          {
+            "name": "performCalculations",
+            "type": "FunctionDeclaration",
+            "startLine": 83,
+            "endLine": 83
+          }
+        ]
+      },
+      {
+        "name": "performCalculations",
+        "totalLine": 20,
+        "startLine": 76,
+        "endLine": 95,
+        "references": []
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 1,
+        "startLine": 94,
+        "endLine": 94,
+        "references": []
+      }
     ],
     "classDeclarations": [
       {
         "name": "Telephone",
         "totalLine": 21,
+        "startLine": 22,
+        "endLine": 42,
         "methods": [
-          { "name": "add", "totalLine": 5 },
-          { "name": "subtract", "totalLine": 5 },
-          { "name": "getnumber", "totalLine": 3 }
-        ]
+          {
+            "name": "add",
+            "totalLine": 5,
+            "startLine": 27,
+            "endLine": 31,
+            "references": []
+          },
+          {
+            "name": "subtract",
+            "totalLine": 5,
+            "startLine": 33,
+            "endLine": 37,
+            "references": []
+          },
+          {
+            "name": "getnumber",
+            "totalLine": 3,
+            "startLine": 39,
+            "endLine": 41,
+            "references": []
+          }
+        ],
+        "references": []
       },
       {
         "name": "Calculator",
         "totalLine": 21,
+        "startLine": 44,
+        "endLine": 64,
         "methods": [
-          { "name": "add", "totalLine": 5 },
-          { "name": "subtract", "totalLine": 5 },
-          { "name": "getHistory", "totalLine": 3 }
-        ]
+          {
+            "name": "add",
+            "totalLine": 5,
+            "startLine": 49,
+            "endLine": 53,
+            "references": []
+          },
+          {
+            "name": "subtract",
+            "totalLine": 5,
+            "startLine": 55,
+            "endLine": 59,
+            "references": []
+          },
+          {
+            "name": "getHistory",
+            "totalLine": 3,
+            "startLine": 61,
+            "endLine": 63,
+            "references": []
+          }
+        ],
+        "references": []
       },
       {
         "name": "MathUtils",
         "totalLine": 9,
+        "startLine": 66,
+        "endLine": 74,
         "methods": [
-          { "name": "square", "totalLine": 3 },
-          { "name": "cube", "totalLine": 3 }
-        ]
+          {
+            "name": "square",
+            "totalLine": 3,
+            "startLine": 67,
+            "endLine": 69,
+            "references": [
+              {
+                "name": "performCalculations",
+                "type": "FunctionDeclaration",
+                "startLine": 90,
+                "endLine": 90
+              }
+            ]
+          },
+          {
+            "name": "cube",
+            "totalLine": 3,
+            "startLine": 71,
+            "endLine": 73,
+            "references": [
+              {
+                "name": "performCalculations",
+                "type": "FunctionDeclaration",
+                "startLine": 91,
+                "endLine": 91
+              }
+            ]
+          }
+        ],
+        "references": []
       }
     ],
     "totalFunctions": 6,

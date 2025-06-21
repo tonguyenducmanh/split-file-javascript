@@ -20,7 +20,7 @@ format trả về phải theo dạng như bên dưới:
         // trong items sẽ là mảng các tên bằng string, nếu nhiều hàm trùng tên nằm trong 1 file thì tên sẽ được viết dạng object với "name" là tên gốc, "newName" là tên mới sau khi export import
         // trường hợp muốn tách method trong class thì phải khai báo rõ object gồm "class" là tên class và "methods" là mảng các method cần tách
     ],
-    "splitedSubName": // sub tên của file đã tách => khi tách xong sẽ nằm cùng cấp với file gốc, đặt tên bằng tiếng anh theo ngữ nghĩa chung của các hàm trong nhóm
+    "splitedSubName": // sub tên của file đã tách => khi tách xong sẽ nằm cùng cấp với file gốc, đặt tên bằng tiếng anh theo ngữ nghĩa chung của các hàm trong nhóm, tên file phải có tiền tố là tên file gốc
   }
 ]
 ```
@@ -42,12 +42,12 @@ ví dụ
       { "name": "validateData", "newName": "DateValidate" },
       "validateMoney"
     ],
-    "splitedSubName": "validate.js"
+    "splitedSubName": "demo_validate.js"
   },
   {
     "filePath": "D:/code/demo.js",
     "items": [{ "name": "AuthLogin", "newName": "Login" }],
-    "splitedSubName": "user_login.js"
+    "splitedSubName": "demo_user_login.js"
   }
 ]
 

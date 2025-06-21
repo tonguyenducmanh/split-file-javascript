@@ -19,6 +19,28 @@ const divideNumbers = (a, b) => {
   return a / b;
 };
 
+class Telephone {
+  constructor() {
+    this.number = [];
+  }
+
+  add(a, b) {
+    const result = a + b;
+    this.number.push(`${a} + ${b} = ${result}`);
+    return result;
+  }
+
+  subtract(a, b) {
+    const result = a - b;
+    this.number.push(`${a} - ${b} = ${result}`);
+    return result;
+  }
+
+  getnumber() {
+    return this.number;
+  }
+}
+
 class Calculator {
   constructor() {
     this.history = [];

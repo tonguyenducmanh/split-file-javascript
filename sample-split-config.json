@@ -1,0 +1,14 @@
+[
+  {
+    "file": "test.js",
+    "items": ["Calculator", "greetUser", "performCalculations"],
+    "outputDir": "./output/",
+    "splitedSubName": "test-method-one"
+  },
+  {
+    "file": "test.js",
+    "items": ["calculateSum", "multiplyNumbers"],
+    "outputDir": "./output/",
+    "splitedSubName": "test-method-two"
+  }
+]

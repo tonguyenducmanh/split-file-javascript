@@ -1,21 +1,10 @@
 import Refactor from "./Refactor.js";
+import fs from "fs";
 
 let analize = Refactor.analyzeFile("test.js");
 
-let extractConfig = [
-  {
-    file: "test.js",
-    items: ["Calculator", "MathUtils", "greetUser", "performCalculations"],
-    outputDir: "./output/",
-    splitedSubName: "test-method-one",
-  },
-  {
-    file: "test.js",
-    items: ["calculateSum", "multiplyNumbers"],
-    outputDir: "./output/",
-    splitedSubName: "test-method-two",
-  },
-];
+const code = fs.readFileSync("sample-split-config.json", "utf8");
+let extractConfig = JSON.parse(code);
 
 let splitResult = Refactor.splitFile("test.js", extractConfig);
 debugger;

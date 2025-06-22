@@ -102,8 +102,10 @@ class RefactorJS {
       }
     }
     if (saveResultPath) {
-      this.createFolderOutput(saveResultPath);
-      let resultPath = path.join(saveResultPath, "result.json");
+      let dirName = path.dirname(saveResultPath);
+      let fileResult = path.basename(saveResultPath) ?? "result.json";
+      this.createFolderOutput(dirName);
+      let resultPath = path.join(dirName, fileResult);
       fs.writeFileSync(resultPath, JSON.stringify(analysis), this._encodeType);
     }
     return analysis;

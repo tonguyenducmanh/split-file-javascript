@@ -1,3 +1,4 @@
+// Refactor.js
 import fs from "fs";
 import { parse } from "@babel/parser";
 import babelTraverse from "@babel/traverse";
@@ -555,15 +556,44 @@ class RefactorJS {
     let me = this;
     const extractedItems = [];
     const notFound = [...extractConfig];
+
+    // STEP 1: Thêm bản đồ để theo dõi các item đã được trích xuất
+    const extractedItemsMap = new Map(); // key: originalName, value: { newName, outputPath }
+
+    // Duyệt qua config để populate extractedItemsMap ban đầu
+    extractConfig.forEach((cfg) => {
+      const outputPath = this.getFullPathForNewFile(cfg);
+      cfg.items.forEach((item) => {
+        const { originalName, newName } = this.getIdentifierNames(item);
+        if (originalName) {
+          extractedItemsMap.set(originalName, { newName, outputPath });
+          if (item.methods) {
+            item.methods.forEach((method) => {
+              const {
+                originalName: methodOriginalName,
+                newName: methodNewName,
+              } = this.getIdentifierNames(method);
+              extractedItemsMap.set(`${originalName}.${methodOriginalName}`, {
+                newName: methodNewName,
+                outputPath,
+              });
+            });
+          }
+        }
+      });
+    });
+
     if (extractConfig && extractConfig.length > 0) {
       extractConfig.forEach((config) => {
         const code = fs.readFileSync(config.filePath, this._encodeType);
         const ast = this.parseSource(code);
 
-        const importsToAdd = [];
+        const importsToAddForSourceFile = [];
 
         // Dictionary để gom node theo file đích
         const fileNodesMap = new Map();
+        // Bản đồ để lưu trữ các imports cần thêm vào từng file đích mới
+        const importsToAddToNewFileMap = new Map(); // Key: filePath, Value: Set of { originalName, newName, path }
 
         this.traverseCodeForSplit(
           ast,
@@ -571,8 +601,10 @@ class RefactorJS {
           me,
           notFound,
           extractedItems,
-          importsToAdd,
-          fileNodesMap
+          importsToAddForSourceFile, // Imports cho file nguồn
+          fileNodesMap,
+          extractedItemsMap, // Truyền extractedItemsMap
+          importsToAddToNewFileMap // Truyền importsToAddToNewFileMap
         );
 
         // Ghi từng file 1 lần
@@ -580,12 +612,42 @@ class RefactorJS {
           const exportNodes = items.map(({ node }) =>
             babelTypes.exportNamedDeclaration(node, [])
           );
-          const newAst = babelTypes.program(exportNodes, [], "module");
+          let newAst = babelTypes.program(exportNodes, [], "module");
+
+          // Thêm imports vào AST của file mới
+          const importsForThisFile = importsToAddToNewFileMap.get(filePath);
+          if (importsForThisFile && importsForThisFile.size > 0) {
+            const importStatements = [];
+            const importGroups = new Map(); // Để nhóm imports từ cùng một đường dẫn
+            importsForThisFile.forEach((imp) => {
+              if (!importGroups.has(imp.path)) {
+                importGroups.set(imp.path, []);
+              }
+              importGroups.get(imp.path).push(imp);
+            });
+
+            for (const [importPath, imps] of importGroups.entries()) {
+              const specifiers = imps.map((imp) =>
+                babelTypes.importSpecifier(
+                  babelTypes.identifier(imp.originalName), // originalName là tên được import
+                  babelTypes.identifier(imp.newName) // newName là tên mà nó được gọi trong file mới
+                )
+              );
+              importStatements.push(
+                babelTypes.importDeclaration(
+                  specifiers,
+                  babelTypes.stringLiteral(importPath)
+                )
+              );
+            }
+            newAst.program.body.unshift(...importStatements);
+          }
+
           const code = generate(newAst).code;
           fs.writeFileSync(filePath, code, this._encodeType);
         }
 
-        this.addImportToSourceFile(importsToAdd, ast);
+        this.addImportToSourceFile(importsToAddForSourceFile, ast);
         const modifiedCode = generate(ast, { comments: true }).code;
         fs.writeFileSync(config.filePath, modifiedCode, this._encodeType);
       });
@@ -593,15 +655,17 @@ class RefactorJS {
     return { extractedItems, notFound };
   }
 
-  // MODIFIED: Cập nhật hàm addToFile để xử lý tên mới
+  // MODIFIED: Cập nhật hàm addToFile để xử lý tên mới và thu thập imports cho file đích
   addToFile(
     originalName,
     newName,
     node,
     currentConfig,
     extractedItems,
-    importsToAdd,
-    fileNodesMap
+    importsToAddForSourceFile,
+    fileNodesMap,
+    extractedItemsMap, // Thêm tham số này
+    importsToAddToNewFileMap // Thêm tham số này
   ) {
     const output = this.getOutputConfig(currentConfig);
     let outputPath = this.getFullPathForNewFile(currentConfig);
@@ -611,6 +675,13 @@ class RefactorJS {
     // Đổi tên node trước khi thêm
     if (node.id) {
       node.id = babelTypes.identifier(newName);
+    } else if (node.key && node.type === refactorConstant.ClassMethod) {
+      // Đối với class method, tên method trong class vẫn giữ nguyên,
+      // nhưng hàm độc lập được tạo ra sẽ có tên mới.
+      // Node này có thể là hàm độc lập được tạo từ method.
+      if (babelTypes.isFunctionDeclaration(node)) {
+        node.id = babelTypes.identifier(newName);
+      }
     }
 
     fileNodesMap.get(outputPath).push({ node, name: newName });
@@ -621,7 +692,75 @@ class RefactorJS {
       fileName: output.fileName,
       path: outputPath,
     });
-    importsToAdd.push({ originalName, newName, path: relativePath });
+    importsToAddForSourceFile.push({
+      originalName,
+      newName,
+      path: relativePath,
+    });
+
+    // STEP 2 & 3: Duyệt qua các lời gọi trong node này để tìm imports cần thiết cho file đích
+    const me = this;
+    traverse(node, {
+      CallExpression(callPath) {
+        const callee = callPath.node.callee;
+        let calleeName = null;
+
+        if (babelTypes.isIdentifier(callee)) {
+          calleeName = callee.name;
+        } else if (babelTypes.isMemberExpression(callee)) {
+          if (babelTypes.isIdentifier(callee.property)) {
+            calleeName = callee.property.name;
+            if (babelTypes.isIdentifier(callee.object)) {
+              const objectName = callee.object.name;
+              // Kiểm tra xem objectName có phải là tên lớp đã được trích xuất không
+              if (extractedItemsMap.has(objectName)) {
+                calleeName = `${objectName}.${calleeName}`; // Class.method
+              }
+            }
+          }
+        }
+
+        if (calleeName) {
+          const targetInfo = extractedItemsMap.get(calleeName);
+          if (targetInfo && targetInfo.outputPath !== outputPath) {
+            // Đây là một lời gọi đến một hàm/lớp đã được trích xuất sang file khác
+            if (!importsToAddToNewFileMap.has(outputPath)) {
+              importsToAddToNewFileMap.set(outputPath, new Set());
+            }
+            const importPath = me.buildImportPathFile(
+              path.relative(path.dirname(outputPath), targetInfo.outputPath)
+            );
+            // Thêm alias nếu tên mới khác tên gốc
+            importsToAddToNewFileMap.get(outputPath).add({
+              originalName: targetInfo.newName, // Tên được export từ file đích
+              newName: callee.name, // Tên được sử dụng trong file này (tên gốc)
+              path: importPath,
+            });
+          }
+        }
+      },
+      NewExpression(newPath) {
+        const callee = newPath.node.callee;
+        if (babelTypes.isIdentifier(callee)) {
+          const className = callee.name;
+          const targetInfo = extractedItemsMap.get(className);
+          if (targetInfo && targetInfo.outputPath !== outputPath) {
+            // Đây là một lời gọi đến một lớp đã được trích xuất sang file khác
+            if (!importsToAddToNewFileMap.has(outputPath)) {
+              importsToAddToNewFileMap.set(outputPath, new Set());
+            }
+            const importPath = me.buildImportPathFile(
+              path.relative(path.dirname(outputPath), targetInfo.outputPath)
+            );
+            importsToAddToNewFileMap.get(outputPath).add({
+              originalName: targetInfo.newName,
+              newName: className,
+              path: importPath,
+            });
+          }
+        }
+      },
+    });
   }
 
   createFunctionFromDeclarator(declarator, name) {
@@ -653,6 +792,10 @@ class RefactorJS {
 
   // MODIFIED: Đảm bảo hàm được tạo ra có tên mới
   createFunctionFromMethod(methodNode, newFunctionName) {
+    // Đối với các static method, params không thay đổi.
+    // Đối với instance method, chúng ta sẽ cần truyền 'this' của class cũ vào như một tham số đầu tiên,
+    // nhưng để đơn giản, hiện tại ta chỉ lấy params của method gốc.
+    // Việc này sẽ cần một cơ chế phức tạp hơn để xử lý ngữ cảnh 'this' chính xác nếu cần.
     const params = methodNode.static
       ? methodNode.params
       : [babelTypes.identifier("instance"), ...methodNode.params];
@@ -712,8 +855,8 @@ class RefactorJS {
       for (const [path, imps] of importGroups.entries()) {
         const specifiers = imps.map((imp) =>
           babelTypes.importSpecifier(
-            babelTypes.identifier(imp.originalName),
-            babelTypes.identifier(imp.newName)
+            babelTypes.identifier(imp.originalName), // Tên gốc được export
+            babelTypes.identifier(imp.newName) // Tên mới được sử dụng trong file nguồn
           )
         );
         importStatements.push(
@@ -752,8 +895,10 @@ class RefactorJS {
     me,
     notFound,
     extractedItems,
-    importsToAdd,
-    fileNodesMap
+    importsToAddForSourceFile, // Đổi tên tham số cho rõ ràng
+    fileNodesMap,
+    extractedItemsMap, // Thêm tham số này
+    importsToAddToNewFileMap // Thêm tham số này
   ) {
     traverse(ast, {
       FunctionDeclaration: (path) => {
@@ -771,8 +916,10 @@ class RefactorJS {
               path.node,
               cfg,
               extractedItems,
-              importsToAdd,
-              fileNodesMap
+              importsToAddForSourceFile,
+              fileNodesMap,
+              extractedItemsMap,
+              importsToAddToNewFileMap
             );
             path.remove();
             me.removeFromListQuery(notFound, originalName, cfg);
@@ -800,8 +947,10 @@ class RefactorJS {
                 funcNode,
                 cfg,
                 extractedItems,
-                importsToAdd,
-                fileNodesMap
+                importsToAddForSourceFile,
+                fileNodesMap,
+                extractedItemsMap,
+                importsToAddToNewFileMap
               );
               me.removeFromListQuery(notFound, originalName, cfg);
               if (path.node.declarations.length === 1) {
@@ -837,8 +986,10 @@ class RefactorJS {
                 path.node,
                 cfg,
                 extractedItems,
-                importsToAdd,
-                fileNodesMap
+                importsToAddForSourceFile,
+                fileNodesMap,
+                extractedItemsMap,
+                importsToAddToNewFileMap
               );
               path.remove();
               me.removeFromListQuery(notFound, originalName, cfg);
@@ -873,8 +1024,10 @@ class RefactorJS {
                     standaloneFunctionNode,
                     cfg,
                     extractedItems,
-                    importsToAdd,
-                    fileNodesMap
+                    importsToAddForSourceFile,
+                    fileNodesMap,
+                    extractedItemsMap,
+                    importsToAddToNewFileMap
                   );
 
                   const proxyMethodNode = me.createProxyMethod(
@@ -935,6 +1088,11 @@ class RefactorJS {
     }
   }
   buildImportPathFile(filePath) {
+    // Đảm bảo đường dẫn tương đối đúng cho môi trường Windows/Linux
+    // path.relative trả về đường dẫn từ cwd đến filePath
+    // Để có đường dẫn tương đối từ file đích đến file khác, cần path.relative(path.dirname(currentFile), targetFile)
+    // Hiện tại hàm này được dùng cho imports của file nguồn đến file đích, nên './' là hợp lý.
+    // Đối với imports giữa các file đích, cần tính toán lại đường dẫn tương đối chính xác.
     const relativePath = path.relative(process.cwd(), filePath);
     return `./${relativePath.replace(/\\/g, "/")}`;
   }

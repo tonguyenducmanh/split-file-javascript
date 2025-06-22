@@ -107,3 +107,4 @@ if (typeof module !== "undefined" && module.exports) {
     performCalculations,
   };
 }
+performCalculations();

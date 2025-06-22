@@ -2,42 +2,57 @@
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
+      "calculateSum",
+      "multiplyNumbers",
+      "divideNumbers",
       {
-        "class": "Telephone"
+        "class": "Calculator",
+        "methods": ["add", "subtract", "getHistory"]
+      },
+      {
+        "class": "Telephone",
+        "methods": ["add", "subtract", "getnumber"]
       }
     ],
-    "splitedSubName": "test-telephone.js"
-  },
-  {
-    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
-    "items": [
-      {
-        "class": "Calculator"
-      }
-    ],
-    "splitedSubName": "test-calculator.js"
-  },
-  {
-    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
-    "items": [
-      {
-        "class": "MathUtils"
-      }
-    ],
-    "splitedSubName": "test-math-utils.js"
-  },
-  {
-    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
-    "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
-    "splitedSubName": "test-arithmetic-methods.js"
+    "splitedSubName": "test_math_operations.js"
   },
   {
     "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
       "greetUser",
-      "performCalculations",
-      { "name": "Anonymous", "newName": "anonymousWrapper" }
+      {
+        "class": "MathUtils",
+        "methods": ["square", "cube"]
+      }
     ],
-    "splitedSubName": "test-other.js"
+    "splitedSubName": "test_utilities.js"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": [
+      "fetchUserData",
+      {
+        "class": "AsyncMath",
+        "methods": ["delayedMultiply", "delayedAdd"]
+      }
+    ],
+    "splitedSubName": "test_async_utils.js"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": [
+      {
+        "class": "UserService",
+        "methods": ["getUserEmail"]
+      }
+    ],
+    "splitedSubName": "test_user_services.js"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": [
+      "performCalculations"
+    ],
+    "splitedSubName": "test_main_runner.js"
   }
 ]

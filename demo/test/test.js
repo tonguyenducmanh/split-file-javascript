@@ -1,4 +1,4 @@
-// Test file to demonstrate the split-js-file functionality
+// Test file to demonstrate the split-js-file functionality with async/await
 
 function greetUser(name) {
   return `Hello, ${name}! Welcome to our application.`;
@@ -73,8 +73,42 @@ class MathUtils {
   }
 }
 
-function performCalculations() {
+async function fetchUserData(userId) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ id: userId, name: "Async User", email: "user@example.com" });
+    }, 1000);
+  });
+}
+
+class AsyncMath {
+  static async delayedMultiply(a, b) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(a * b);
+      }, 500);
+    });
+  }
+
+  static async delayedAdd(a, b) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(a + b);
+      }, 500);
+    });
+  }
+}
+
+class UserService {
+  async getUserEmail(userId) {
+    const user = await fetchUserData(userId);
+    return user.email;
+  }
+}
+
+async function performCalculations() {
   const calc = new Calculator();
+  const userService = new UserService();
 
   console.log("Basic calculations:");
   console.log(greetUser("Developer"));
@@ -90,6 +124,17 @@ function performCalculations() {
   console.log("Square of 5:", MathUtils.square(5));
   console.log("Cube of 3:", MathUtils.cube(3));
 
+  console.log("\nUsing AsyncMath:");
+  console.log(
+    "Delayed Multiply (3 * 4):",
+    await AsyncMath.delayedMultiply(3, 4)
+  );
+  console.log("Delayed Add (6 + 7):", await AsyncMath.delayedAdd(6, 7));
+
+  console.log("\nFetching async user info:");
+  const email = await userService.getUserEmail(101);
+  console.log("User email:", email);
+
   console.log("\nCalculator history:");
   calc.getHistory().forEach((entry) => console.log(entry));
 }
@@ -104,7 +149,11 @@ if (typeof module !== "undefined" && module.exports) {
     Calculator,
     Telephone,
     MathUtils,
+    AsyncMath,
+    fetchUserData,
+    UserService,
     performCalculations,
   };
 }
+
 performCalculations();

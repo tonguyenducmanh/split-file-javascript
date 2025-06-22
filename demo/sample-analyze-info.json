@@ -11,8 +11,8 @@
           {
             "name": "performCalculations",
             "type": "FunctionDeclaration",
-            "startLine": 80,
-            "endLine": 80
+            "startLine": 114,
+            "endLine": 114
           }
         ]
       },
@@ -25,8 +25,8 @@
           {
             "name": "performCalculations",
             "type": "FunctionDeclaration",
-            "startLine": 81,
-            "endLine": 81
+            "startLine": 115,
+            "endLine": 115
           }
         ]
       },
@@ -39,8 +39,8 @@
           {
             "name": "performCalculations",
             "type": "FunctionDeclaration",
-            "startLine": 82,
-            "endLine": 82
+            "startLine": 116,
+            "endLine": 116
           }
         ]
       },
@@ -53,23 +53,79 @@
           {
             "name": "performCalculations",
             "type": "FunctionDeclaration",
-            "startLine": 83,
-            "endLine": 83
+            "startLine": 117,
+            "endLine": 117
           }
         ]
       },
       {
-        "name": "performCalculations",
-        "totalLine": 20,
+        "name": "fetchUserData",
+        "totalLine": 7,
         "startLine": 76,
-        "endLine": 95,
+        "endLine": 82,
+        "references": [
+          {
+            "name": "UserService.getUserEmail",
+            "type": "ClassMethod",
+            "startLine": 104,
+            "endLine": 104
+          }
+        ]
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 5,
+        "startLine": 77,
+        "endLine": 81,
+        "references": []
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 3,
+        "startLine": 78,
+        "endLine": 80,
+        "references": []
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 5,
+        "startLine": 86,
+        "endLine": 90,
+        "references": []
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 3,
+        "startLine": 87,
+        "endLine": 89,
+        "references": []
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 5,
+        "startLine": 94,
+        "endLine": 98,
+        "references": []
+      },
+      {
+        "name": "Anonymous",
+        "totalLine": 3,
+        "startLine": 95,
+        "endLine": 97,
+        "references": []
+      },
+      {
+        "name": "performCalculations",
+        "totalLine": 32,
+        "startLine": 109,
+        "endLine": 140,
         "references": []
       },
       {
         "name": "Anonymous",
         "totalLine": 1,
-        "startLine": 94,
-        "endLine": 94,
+        "startLine": 139,
+        "endLine": 139,
         "references": []
       }
     ],
@@ -136,8 +192,8 @@
           {
             "name": "performCalculations",
             "type": "NewExpression",
-            "startLine": 77,
-            "endLine": 77
+            "startLine": 110,
+            "endLine": 110
           }
         ]
       },
@@ -156,8 +212,8 @@
               {
                 "name": "performCalculations",
                 "type": "FunctionDeclaration",
-                "startLine": 90,
-                "endLine": 90
+                "startLine": 124,
+                "endLine": 124
               }
             ]
           },
@@ -170,16 +226,76 @@
               {
                 "name": "performCalculations",
                 "type": "FunctionDeclaration",
-                "startLine": 91,
-                "endLine": 91
+                "startLine": 125,
+                "endLine": 125
               }
             ]
           }
         ],
         "references": []
+      },
+      {
+        "name": "AsyncMath",
+        "totalLine": 17,
+        "startLine": 84,
+        "endLine": 100,
+        "methods": [
+          {
+            "name": "delayedMultiply",
+            "totalLine": 7,
+            "startLine": 85,
+            "endLine": 91,
+            "references": [
+              {
+                "name": "performCalculations",
+                "type": "FunctionDeclaration",
+                "startLine": 130,
+                "endLine": 130
+              }
+            ]
+          },
+          {
+            "name": "delayedAdd",
+            "totalLine": 7,
+            "startLine": 93,
+            "endLine": 99,
+            "references": [
+              {
+                "name": "performCalculations",
+                "type": "FunctionDeclaration",
+                "startLine": 132,
+                "endLine": 132
+              }
+            ]
+          }
+        ],
+        "references": []
+      },
+      {
+        "name": "UserService",
+        "totalLine": 6,
+        "startLine": 102,
+        "endLine": 107,
+        "methods": [
+          {
+            "name": "getUserEmail",
+            "totalLine": 4,
+            "startLine": 103,
+            "endLine": 106,
+            "references": []
+          }
+        ],
+        "references": [
+          {
+            "name": "performCalculations",
+            "type": "NewExpression",
+            "startLine": 111,
+            "endLine": 111
+          }
+        ]
       }
     ],
-    "totalFunctions": 6,
-    "totalClasses": 3
+    "totalFunctions": 13,
+    "totalClasses": 5
   }
 ]

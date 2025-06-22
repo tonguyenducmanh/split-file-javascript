@@ -1,36 +1,43 @@
 [
   {
-    "filePath": "D:/code/my code/split-file-javascript/demo/test/test.js",
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
     "items": [
       {
-        "class": "Calculator",
-        "methods": ["add", "subtract", "getHistory"]
-      },
-      {
-        "class": "MathUtils",
-        "methods": ["square", "cube"]
-      },
-      "greetUser",
-      "calculateSum",
-      "multiplyNumbers",
-      "divideNumbers",
-      "performCalculations"
-    ],
-    "splitedSubName": "test_calculation.js"
-  },
-  {
-    "filePath": "D:/code/my code/split-file-javascript/demo/test/test.js",
-    "items": [
-      {
-        "class": "Telephone",
-        "methods": ["add", "subtract", "getnumber"]
+        "class": "Telephone"
       }
     ],
-    "splitedSubName": "test_telephone.js"
+    "splitedSubName": "test-telephone.js"
   },
   {
-    "filePath": "D:/code/my code/split-file-javascript/demo/test/test.js",
-    "items": ["Anonymous"],
-    "splitedSubName": "test_other.js"
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": [
+      {
+        "class": "Calculator"
+      }
+    ],
+    "splitedSubName": "test-calculator.js"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": [
+      {
+        "class": "MathUtils"
+      }
+    ],
+    "splitedSubName": "test-math-utils.js"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": ["calculateSum", "multiplyNumbers", "divideNumbers"],
+    "splitedSubName": "test-arithmetic-methods.js"
+  },
+  {
+    "filePath": "D:\\code\\my code\\split-file-javascript\\demo\\test\\test.js",
+    "items": [
+      "greetUser",
+      "performCalculations",
+      { "name": "Anonymous", "newName": "anonymousWrapper" }
+    ],
+    "splitedSubName": "test-other.js"
   }
 ]

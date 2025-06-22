@@ -1,5 +1,17 @@
 ## Tool tách nhỏ file js
 
+## Demo việc tách file theo cấu hình
+
+file test.js sau khi tách
+
+![alt text](imgs/test_after_split.png)
+
+file mới sinh ra tự động import từ các file cần thiết
+
+![alt text](imgs/new_file_generated.png)
+
+## Hướng dẫn sử dụng
+
 ## file source refactor code
 
 [Refactor.js](Refactor.js)

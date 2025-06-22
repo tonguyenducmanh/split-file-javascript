@@ -551,11 +551,226 @@ class RefactorJS {
     return null;
   }
 
+  /**
+   * Phân tích các phụ thuộc giữa các thành phần đã tách
+   * @param {Object} analysis - Kết quả phân tích từ analyzeFile
+   * @param {Array} extractConfig - Cấu hình tách file
+   * @returns {Map<string, Array<{name: string, originalName: string, newName: string, fileName: string}>>}
+   *          Bản đồ các phụ thuộc: key là fileName, value là mảng các thành phần phụ thuộc
+   */
+  analyzeDependencies(analysis, extractConfig) {
+    const dependencies = new Map(); // Lưu trữ phụ thuộc của mỗi file
+    const itemToFileMap = new Map(); // Ánh xạ từ tên thành phần đến tên file
+
+    // Tạo bản đồ ánh xạ từ tên thành phần đến tên file
+    extractConfig.forEach((config) => {
+      const fileName = config.splitedSubName;
+      config.items.forEach((item) => {
+        const { originalName, newName } = this.getIdentifierNames(item);
+        itemToFileMap.set(originalName, {
+          fileName,
+          originalName,
+          newName,
+        });
+
+        // Nếu là class, thêm cả các method
+        if (typeof item === "object" && item.class) {
+          const classInfo = analysis.classDeclarations.find(
+            (cls) => cls.name === originalName
+          );
+          if (classInfo && classInfo.methods) {
+            classInfo.methods.forEach((method) => {
+              const methodKey = `${originalName}.${method.name}`;
+              itemToFileMap.set(methodKey, {
+                fileName,
+                originalName: methodKey,
+                newName: method.name,
+                isClassMethod: true,
+                className: originalName,
+                classNewName: newName,
+              });
+            });
+          }
+        }
+      });
+    });
+
+    // Phân tích phụ thuộc từ functionDeclarations
+    analysis.functionDeclarations.forEach((func) => {
+      if (func.references && func.references.length > 0) {
+        func.references.forEach((ref) => {
+          // Bỏ qua các references từ các phần không được tách
+          if (!itemToFileMap.has(ref.name)) return;
+
+          // Lấy thông tin về file chứa thành phần gọi
+          const callerInfo = itemToFileMap.get(ref.name);
+
+          // Lấy thông tin về file chứa thành phần được gọi
+          const targetInfo = itemToFileMap.get(func.name);
+
+          if (
+            callerInfo &&
+            targetInfo &&
+            callerInfo.fileName !== targetInfo.fileName
+          ) {
+            // Nếu chưa có mảng phụ thuộc cho file này, tạo mới
+            if (!dependencies.has(callerInfo.fileName)) {
+              dependencies.set(callerInfo.fileName, []);
+            }
+
+            // Thêm phụ thuộc
+            const dependencyArray = dependencies.get(callerInfo.fileName);
+            if (
+              !dependencyArray.some(
+                (dep) => dep.originalName === targetInfo.originalName
+              )
+            ) {
+              dependencyArray.push(targetInfo);
+            }
+          }
+        });
+      }
+    });
+
+    // Phân tích phụ thuộc từ classDeclarations
+    analysis.classDeclarations.forEach((cls) => {
+      // Xử lý các references của class
+      if (cls.references && cls.references.length > 0) {
+        cls.references.forEach((ref) => {
+          if (!itemToFileMap.has(ref.name)) return;
+
+          const callerInfo = itemToFileMap.get(ref.name);
+          const targetInfo = itemToFileMap.get(cls.name);
+
+          if (
+            callerInfo &&
+            targetInfo &&
+            callerInfo.fileName !== targetInfo.fileName
+          ) {
+            if (!dependencies.has(callerInfo.fileName)) {
+              dependencies.set(callerInfo.fileName, []);
+            }
+
+            const dependencyArray = dependencies.get(callerInfo.fileName);
+            if (
+              !dependencyArray.some(
+                (dep) => dep.originalName === targetInfo.originalName
+              )
+            ) {
+              dependencyArray.push(targetInfo);
+            }
+          }
+        });
+      }
+
+      // Xử lý các references của methods trong class
+      if (cls.methods) {
+        cls.methods.forEach((method) => {
+          const methodKey = `${cls.name}.${method.name}`;
+
+          if (method.references && method.references.length > 0) {
+            method.references.forEach((ref) => {
+              if (!itemToFileMap.has(ref.name)) return;
+
+              const callerInfo = itemToFileMap.get(ref.name);
+              const targetInfo = itemToFileMap.get(methodKey);
+
+              if (
+                callerInfo &&
+                targetInfo &&
+                callerInfo.fileName !== targetInfo.fileName
+              ) {
+                if (!dependencies.has(callerInfo.fileName)) {
+                  dependencies.set(callerInfo.fileName, []);
+                }
+
+                const dependencyArray = dependencies.get(callerInfo.fileName);
+                // Nếu phụ thuộc vào method, thêm phụ thuộc vào class
+                const classTargetInfo = itemToFileMap.get(cls.name);
+                if (
+                  !dependencyArray.some(
+                    (dep) => dep.originalName === classTargetInfo.originalName
+                  )
+                ) {
+                  dependencyArray.push(classTargetInfo);
+                }
+              }
+            });
+          }
+        });
+      }
+    });
+
+    return dependencies;
+  }
+
+  /**
+   * Tạo import statements cho các phụ thuộc của file
+   * @param {Array} dependencies - Mảng các phụ thuộc của file
+   * @param {string} sourcePath - Đường dẫn tới file nguồn
+   * @param {string} targetPath - Đường dẫn tới file đích
+   * @returns {Array} Mảng các node ImportDeclaration
+   */
+  createImportStatementsForDependencies(dependencies, sourcePath, targetPath) {
+    // Nhóm các import theo file path
+    const importGroups = new Map();
+
+    dependencies.forEach((dep) => {
+      const sourceDir = path.dirname(sourcePath);
+      const targetFilePath = path.join(sourceDir, dep.fileName);
+      const relativePath = path.relative(
+        path.dirname(targetPath),
+        path.dirname(targetFilePath)
+      );
+      const importPath = `./${path
+        .join(relativePath, path.basename(dep.fileName))
+        .replace(/\\/g, "/")}`;
+
+      if (!importGroups.has(importPath)) {
+        importGroups.set(importPath, []);
+      }
+
+      importGroups.get(importPath).push({
+        originalName: dep.newName,
+        localName: dep.originalName,
+      });
+    });
+
+    // Tạo các import statements
+    const importStatements = [];
+    for (const [importPath, specifiers] of importGroups.entries()) {
+      const importSpecifiers = specifiers.map((spec) =>
+        babelTypes.importSpecifier(
+          babelTypes.identifier(spec.localName),
+          babelTypes.identifier(spec.originalName)
+        )
+      );
+
+      importStatements.push(
+        babelTypes.importDeclaration(
+          importSpecifiers,
+          babelTypes.stringLiteral(importPath)
+        )
+      );
+    }
+
+    return importStatements;
+  }
+
   splitFiles(extractConfig) {
     let me = this;
     const extractedItems = [];
     const notFound = [...extractConfig];
     if (extractConfig && extractConfig.length > 0) {
+      // Phân tích file đầu tiên để lấy thông tin về các phụ thuộc
+      const firstConfig = extractConfig[0];
+      const code = fs.readFileSync(firstConfig.filePath, this._encodeType);
+      const ast = this.parseSource(code);
+      const analysis = this.analyzeFile(firstConfig.filePath);
+
+      // Phân tích các phụ thuộc giữa các thành phần
+      const dependencies = this.analyzeDependencies(analysis, extractConfig);
+
       extractConfig.forEach((config) => {
         const code = fs.readFileSync(config.filePath, this._encodeType);
         const ast = this.parseSource(code);
@@ -580,7 +795,22 @@ class RefactorJS {
           const exportNodes = items.map(({ node }) =>
             babelTypes.exportNamedDeclaration(node, [])
           );
-          const newAst = babelTypes.program(exportNodes, [], "module");
+
+          // Thêm import statements cho các phụ thuộc của file này
+          const importStatements = dependencies.has(path.basename(filePath))
+            ? this.createImportStatementsForDependencies(
+                dependencies.get(path.basename(filePath)),
+                config.filePath,
+                filePath
+              )
+            : [];
+
+          // Tạo AST mới với import và export
+          const newAst = babelTypes.program(
+            [...importStatements, ...exportNodes],
+            [],
+            "module"
+          );
           const code = generate(newAst).code;
           fs.writeFileSync(filePath, code, this._encodeType);
         }

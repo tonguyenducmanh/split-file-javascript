@@ -24,6 +24,9 @@ const refactorConstant = {
   FunctionDeclaration: "FunctionDeclaration", // Thêm để dễ tham chiếu
   FunctionExpression: "FunctionExpression", // Thêm để dễ tham chiếu
   ArrowFunctionExpression: "ArrowFunctionExpression", // Thêm để dễ tham chiếu
+  ObjectMethod: "ObjectMethod", // Thêm cho Vue methods
+  ObjectExpression: "ObjectExpression", // Thêm cho Vue component object
+  ExportDefaultDeclaration: "ExportDefaultDeclaration", // Thêm cho Vue export
 };
 
 /**
@@ -1182,6 +1185,435 @@ class RefactorJS {
     let soureFilePath = path.dirname(currentConfig.filePath);
     let fileName = currentConfig.splitedSubName;
     return path.join(soureFilePath, fileName);
+  }
+
+  // ================ VUE SUPPORT METHODS ================
+
+  /**
+   * Kiểm tra xem file có phải là Vue file không
+   * @param {string} filePath - Đường dẫn file
+   * @returns {boolean} true nếu là file .vue
+   */
+  isVueFile(filePath) {
+    return path.extname(filePath) === ".vue";
+  }
+
+  /**
+   * Extract script section từ Vue file
+   * @param {string} vueContent - Nội dung file Vue
+   * @returns {string|null} Script content hoặc null nếu không tìm thấy
+   */
+  extractScriptSection(vueContent) {
+    const scriptMatch = vueContent.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+    return scriptMatch ? scriptMatch[1] : null;
+  }
+
+  /**
+   * Phân tích file Vue và extract Vue component methods
+   * @param {string} filePath - Đường dẫn file Vue
+   * @returns {Object} Analysis result containing Vue methods
+   */
+  analyzeVueFile(filePath) {
+    const vueContent = fs.readFileSync(filePath, this._encodeType);
+    const scriptSection = this.extractScriptSection(vueContent);
+
+    if (!scriptSection) {
+      throw new Error("No <script> section found in Vue file");
+    }
+
+    const ast = this.parseSource(scriptSection);
+    const analysis = this.initNewAnalysisCode(filePath);
+
+    // Tìm Vue component export và methods property
+    const vueComponentNode = this.findVueComponentExport(ast);
+    if (vueComponentNode) {
+      const methodsProperty = this.findMethodsProperty(vueComponentNode);
+      if (methodsProperty) {
+        this.analyzeVueMethods(analysis, methodsProperty);
+      }
+    }
+
+    this.caculateTotal(analysis);
+    return analysis;
+  }
+
+  /**
+   * Tìm Vue component export trong AST
+   * @param {Object} ast - Abstract Syntax Tree
+   * @returns {Object|null} Vue component object node
+   */
+  findVueComponentExport(ast) {
+    let vueComponentNode = null;
+
+    traverse(ast, {
+      ExportDefaultDeclaration(path) {
+        const declaration = path.node.declaration;
+        if (babelTypes.isObjectExpression(declaration)) {
+          vueComponentNode = declaration;
+          path.stop(); // Dừng traverse khi tìm thấy
+        }
+      },
+    });
+
+    return vueComponentNode;
+  }
+
+  /**
+   * Tìm methods property trong Vue component object
+   * @param {Object} vueComponentNode - Vue component object node
+   * @returns {Object|null} Methods property node
+   */
+  findMethodsProperty(vueComponentNode) {
+    const methodsProperty = vueComponentNode.properties.find(
+      (prop) =>
+        babelTypes.isObjectProperty(prop) &&
+        babelTypes.isIdentifier(prop.key) &&
+        prop.key.name === "methods"
+    );
+
+    return methodsProperty ? methodsProperty.value : null;
+  }
+
+  /**
+   * Phân tích các methods trong Vue component
+   * @param {Object} analysis - Analysis object để lưu kết quả
+   * @param {Object} methodsNode - Methods object node
+   */
+  analyzeVueMethods(analysis, methodsNode) {
+    if (!babelTypes.isObjectExpression(methodsNode)) {
+      return;
+    }
+
+    const me = this;
+    methodsNode.properties.forEach((prop) => {
+      if (
+        babelTypes.isObjectProperty(prop) ||
+        babelTypes.isObjectMethod(prop)
+      ) {
+        const methodName = prop.key.name;
+        let methodFunction = null;
+
+        if (babelTypes.isObjectMethod(prop)) {
+          // method() { ... }
+          methodFunction = prop;
+        } else if (babelTypes.isObjectProperty(prop)) {
+          // method: function() { ... } hoặc method: () => { ... }
+          methodFunction = prop.value;
+        }
+
+        if (methodFunction) {
+          analysis.functionDeclarations.push({
+            name: methodName,
+            totalLine: me.getTotalLineOfNode(methodFunction),
+            startLine: methodFunction.loc
+              ? methodFunction.loc.start.line
+              : null,
+            endLine: methodFunction.loc ? methodFunction.loc.end.line : null,
+            references: [],
+            isVueMethod: true, // Flag để đánh dấu là Vue method
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * Tách Vue methods thành file riêng
+   * @param {Array} extractConfig - Cấu hình tách file
+   * @returns {Object} Kết quả tách file
+   */
+  splitVueFiles(extractConfig) {
+    const result = { extractedItems: [], notFound: [...extractConfig] };
+
+    if (!extractConfig || extractConfig.length === 0) {
+      return result;
+    }
+
+    extractConfig.forEach((config) => {
+      if (this.isVueFile(config.filePath)) {
+        try {
+          const vueResult = this.splitSingleVueFile(config);
+          result.extractedItems.push(...vueResult.extractedItems);
+
+          // Remove processed config from notFound
+          const index = result.notFound.findIndex(
+            (cfg) =>
+              cfg.filePath === config.filePath &&
+              cfg.splitedSubName === config.splitedSubName
+          );
+          if (index > -1) {
+            result.notFound.splice(index, 1);
+          }
+        } catch (error) {
+          console.error(
+            `Error splitting Vue file ${config.filePath}:`,
+            error.message
+          );
+        }
+      }
+    });
+
+    return result;
+  }
+
+  /**
+   * Tách một file Vue duy nhất
+   * @param {Object} config - Cấu hình tách file
+   * @returns {Object} Kết quả tách file
+   */
+  splitSingleVueFile(config) {
+    const vueContent = fs.readFileSync(config.filePath, this._encodeType);
+    const scriptSection = this.extractScriptSection(vueContent);
+
+    if (!scriptSection) {
+      throw new Error("No <script> section found in Vue file");
+    }
+
+    const ast = this.parseSource(scriptSection);
+    const vueComponentNode = this.findVueComponentExport(ast);
+
+    if (!vueComponentNode) {
+      throw new Error("No Vue component export found");
+    }
+
+    const methodsProperty = this.findMethodsProperty(vueComponentNode);
+
+    if (!methodsProperty) {
+      throw new Error("No methods property found in Vue component");
+    }
+
+    // Extract methods và tạo file mới
+    const extractedMethods = this.extractVueMethodsToSplit(
+      methodsProperty,
+      config.items
+    );
+    const methodsObjectFile = this.createVueMethodsFile(extractedMethods);
+
+    // Ghi file methods
+    const outputPath = this.getFullPathForNewFile(config);
+    fs.writeFileSync(outputPath, methodsObjectFile, this._encodeType);
+
+    // Cập nhật file Vue gốc
+    this.updateVueFileWithImport(config, extractedMethods);
+
+    return {
+      extractedItems: extractedMethods.map((m) => ({
+        name: m.name,
+        fileName: config.splitedSubName,
+        path: outputPath,
+      })),
+    };
+  }
+
+  /**
+   * Extract các methods cần tách từ Vue methods object
+   * @param {Object} methodsNode - Methods object node
+   * @param {Array} itemsToExtract - Danh sách items cần tách
+   * @returns {Array} Danh sách methods đã extract
+   */
+  extractVueMethodsToSplit(methodsNode, itemsToExtract) {
+    const extractedMethods = [];
+    const methodsToRemove = [];
+
+    methodsNode.properties.forEach((prop, index) => {
+      if (
+        babelTypes.isObjectProperty(prop) ||
+        babelTypes.isObjectMethod(prop)
+      ) {
+        const methodName = prop.key.name;
+
+        // Kiểm tra xem method này có trong danh sách cần tách không
+        if (itemsToExtract.includes(methodName)) {
+          extractedMethods.push({
+            name: methodName,
+            node: prop,
+          });
+          methodsToRemove.push(index);
+        }
+      }
+    });
+
+    // Remove extracted methods từ original methods object
+    methodsToRemove.reverse().forEach((index) => {
+      methodsNode.properties.splice(index, 1);
+    });
+
+    return extractedMethods;
+  }
+
+  /**
+   * Tạo file chứa Vue methods đã tách
+   * @param {Array} extractedMethods - Danh sách methods đã extract
+   * @returns {string} Nội dung file methods
+   */
+  createVueMethodsFile(extractedMethods) {
+    const methodProperties = extractedMethods.map(({ name, node }) => {
+      // Convert các loại method về ObjectMethod để đảm bảo this binding
+      if (babelTypes.isObjectProperty(node)) {
+        // method: function() { ... } -> method() { ... }
+        if (babelTypes.isFunctionExpression(node.value)) {
+          return babelTypes.objectMethod(
+            "method",
+            babelTypes.identifier(name),
+            node.value.params,
+            node.value.body,
+            false, // computed
+            false, // generator
+            node.value.async || false
+          );
+        }
+        // method: () => { ... } -> method() { ... } (convert arrow to regular function)
+        else if (babelTypes.isArrowFunctionExpression(node.value)) {
+          const body = babelTypes.isBlockStatement(node.value.body)
+            ? node.value.body
+            : babelTypes.blockStatement([
+                babelTypes.returnStatement(node.value.body),
+              ]);
+
+          return babelTypes.objectMethod(
+            "method",
+            babelTypes.identifier(name),
+            node.value.params,
+            body,
+            false, // computed
+            false, // generator
+            node.value.async || false
+          );
+        }
+      }
+      // Nếu đã là ObjectMethod thì giữ nguyên
+      return node;
+    });
+
+    // Tạo object chứa các methods
+    const methodsObject = babelTypes.objectExpression(methodProperties);
+
+    // Tạo export default
+    const exportDefault = babelTypes.exportDefaultDeclaration(methodsObject);
+
+    // Tạo AST và generate code
+    const ast = babelTypes.program([exportDefault], [], "module");
+    const code = generate(ast, { comments: true }).code;
+
+    return code;
+  }
+
+  /**
+   * Cập nhật file Vue gốc với import và spread methods
+   * @param {Object} config - Cấu hình tách file
+   * @param {Array} extractedMethods - Danh sách methods đã tách
+   */
+  updateVueFileWithImport(config, extractedMethods) {
+    const vueContent = fs.readFileSync(config.filePath, this._encodeType);
+    const scriptSection = this.extractScriptSection(vueContent);
+    const ast = this.parseSource(scriptSection);
+
+    // Tạo import name từ file name (remove extension và convert to camelCase)
+    let importName = path.basename(
+      config.splitedSubName,
+      path.extname(config.splitedSubName)
+    );
+    // Convert dấu gạch ngang thành camelCase
+    importName = importName.replace(/-([a-z])/g, (match, letter) =>
+      letter.toUpperCase()
+    );
+
+    // Thêm import statement
+    const importStatement = babelTypes.importDeclaration(
+      [babelTypes.importDefaultSpecifier(babelTypes.identifier(importName))],
+      babelTypes.stringLiteral(`./${config.splitedSubName}`)
+    );
+
+    // Thêm import vào đầu file
+    ast.program.body.unshift(importStatement);
+
+    // Tìm Vue component và xử lý methods
+    traverse(ast, {
+      ExportDefaultDeclaration(path) {
+        const declaration = path.node.declaration;
+        if (babelTypes.isObjectExpression(declaration)) {
+          const methodsProperty = declaration.properties.find(
+            (prop) =>
+              babelTypes.isObjectProperty(prop) &&
+              babelTypes.isIdentifier(prop.key) &&
+              prop.key.name === "methods"
+          );
+
+          if (
+            methodsProperty &&
+            babelTypes.isObjectExpression(methodsProperty.value)
+          ) {
+            // Xóa các methods đã tách khỏi file gốc
+            const extractedMethodNames = extractedMethods.map((m) => m.name);
+            methodsProperty.value.properties =
+              methodsProperty.value.properties.filter((prop) => {
+                if (
+                  babelTypes.isObjectProperty(prop) ||
+                  babelTypes.isObjectMethod(prop)
+                ) {
+                  const methodName = prop.key.name;
+                  return !extractedMethodNames.includes(methodName);
+                }
+                return true; // Giữ lại các properties khác (spread, etc.)
+              });
+
+            // Thêm spread import vào đầu methods object
+            const spreadElement = babelTypes.spreadElement(
+              babelTypes.identifier(importName)
+            );
+            methodsProperty.value.properties.unshift(spreadElement);
+          }
+        }
+      },
+    });
+
+    // Generate updated script
+    const updatedScript = generate(ast, { comments: true }).code;
+
+    // Replace script section trong Vue file
+    const updatedVueContent = vueContent.replace(
+      /<script[^>]*>[\s\S]*?<\/script>/,
+      `<script>\n${updatedScript}\n</script>`
+    );
+
+    fs.writeFileSync(config.filePath, updatedVueContent, this._encodeType);
+  }
+
+  /**
+   * Entry point cho việc split files (hỗ trợ cả JS và Vue)
+   * @param {Array} extractConfig - Cấu hình tách file
+   * @returns {Object} Kết quả tách file
+   */
+  splitFilesUniversal(extractConfig) {
+    if (!extractConfig || extractConfig.length === 0) {
+      return { extractedItems: [], notFound: [] };
+    }
+
+    // Phân loại config theo loại file
+    const jsConfigs = extractConfig.filter(
+      (config) => !this.isVueFile(config.filePath)
+    );
+    const vueConfigs = extractConfig.filter((config) =>
+      this.isVueFile(config.filePath)
+    );
+
+    // Process JS files
+    const jsResult =
+      jsConfigs.length > 0
+        ? this.splitFiles(jsConfigs)
+        : { extractedItems: [], notFound: [] };
+
+    // Process Vue files
+    const vueResult =
+      vueConfigs.length > 0
+        ? this.splitVueFiles(vueConfigs)
+        : { extractedItems: [], notFound: [] };
+
+    // Combine results
+    return {
+      extractedItems: [...jsResult.extractedItems, ...vueResult.extractedItems],
+      notFound: [...jsResult.notFound, ...vueResult.notFound],
+    };
   }
 }
 

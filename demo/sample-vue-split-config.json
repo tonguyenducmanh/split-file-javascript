@@ -1,0 +1,18 @@
+[
+  {
+    "filePath": "D:/FullShared/Tools/split-javascript/demo/test/testVue.vue",
+    "fileType": "vue",
+    "exportType": "methodsObject",
+    "items": [
+      "initStaticData",
+      "searchData",
+      "functionSearchData",
+      "deleteAllFilter",
+      "deleteOneFilter",
+      "filterByOption",
+      "getOptionFilter",
+      "refreshBtn"
+    ],
+    "splitedSubName": "inventory-group-methods.js"
+  }
+]
